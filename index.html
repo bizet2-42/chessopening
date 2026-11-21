@@ -597,7 +597,7 @@ function draw(){if(mode!=="view")return;const Ln=L();const s=st>0?Ln.steps[st-1]
     $("now").insertAdjacentHTML("beforeend",'<div class="eng">'+(s&&s.x!=null?'<span class="verdict '+cls+'">엔진: '+lab+"</span> ":"")+"Stockfish 17 (깊이 17): "+(s?"이 수 후 ":"")+"<b>"+fmtW(ev.e)+"</b>"+(s&&s.x!=null&&s.x>20?" · 손실 "+(s.x/100).toFixed(1)+"폰":"")+(ev.b?" · 다음 최선 <b>"+esc(sanOf(fenNow,ev.b))+"</b>":"")+"</div>");
     setEval(ev.e)}
   const cur=$("moves").querySelector(".m.cur");if(cur)cur.classList.remove("cur");
-  const mb=$("moves").querySelector('.m[data-i="'+st+'"]');if(mb){mb.classList.add("cur");mb.scrollIntoView({block:"nearest"})}
+  const mb=$("moves").querySelector('.m[data-i="'+st+'"]');if(mb){mb.classList.add("cur");const box=$("moves"),bt=mb.getBoundingClientRect().top-box.getBoundingClientRect().top+box.scrollTop,bb=bt+mb.offsetHeight;if(bt<box.scrollTop)box.scrollTop=bt;else if(bb>box.scrollTop+box.clientHeight)box.scrollTop=bb-box.clientHeight}
   cands(s?s.F:START_FEN,nx?nx.u:null);updateEco()}
 function cands(fen,nextU){const known=IDX[posKey(fen)]||{};const ent=Object.entries(known);let h="";
   ent.sort((a,b)=>(b[0]===nextU)-(a[0]===nextU)||b[1].r.length-a[1].r.length);
