@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>체스 오프닝 학습실</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* 레이아웃: 왼쪽 목록(모바일은 서랍) · 본문 = 개요(접힘) → 라인 탭(종류별) → 도구막대 → 보드|패널 */
+:root{
+  --bg:#F3F5F7; --surface:#FFFFFF; --ink:#18202A; --muted:#5A6675; --line:#DDE3E9; --accent:#2C5A86;
+  --accent-soft:#E3ECF5; --good:#1E7350; --good-soft:#E1F2EA; --bad:#B0281F; --bad-soft:#FBE6E4; --warn:#9A6200; --warn-soft:#FBF0D9; --neu-soft:#ECEFF2;
+  --sq-light:#DEE3E6; --sq-dark:#8CA2AD; --sq-last:rgba(205,210,106,.75); --sq-sel:rgba(44,90,134,.45); --coord:#4E5E68;
+  --arrow-next:#2C5A86; --arrow-eng:#1E7350; --arrow-hint:#C98A00;
+  --font-body:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --bw:460px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#11151A; --surface:#191F26; --ink:#E5E9ED; --muted:#9AA6B2; --line:#2A333D; --accent:#86B3DE;
+  --accent-soft:#1E2B39; --good:#5CC497; --good-soft:#15291F; --bad:#F08A80; --bad-soft:#331A18; --warn:#E8B85C; --warn-soft:#2E2512; --neu-soft:#222A33;
+  --sq-light:#C9D1D6; --sq-dark:#7A909B; --coord:#3E4D56; --arrow-next:#2C5A86; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#11151A; --surface:#191F26; --ink:#E5E9ED; --muted:#9AA6B2; --line:#2A333D; --accent:#86B3DE;
+  --accent-soft:#1E2B39; --good:#5CC497; --good-soft:#15291F; --bad:#F08A80; --bad-soft:#331A18; --warn:#E8B85C; --warn-soft:#2E2512; --neu-soft:#222A33;
+  --sq-light:#C9D1D6; --sq-dark:#7A909B; --coord:#3E4D56; --arrow-next:#2C5A86; color-scheme:dark;}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.6}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--accent)}
+button:focus-visible,input:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.top{display:flex;align-items:center;gap:12px;padding:12px 24px;border-bottom:1px solid var(--line);background:var(--surface);position:sticky;top:0;z-index:40}
+.top h1{font-size:17px;font-weight:600;margin:0;letter-spacing:-.01em;flex:1}
+#menu{display:none}
+.prog{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
+.bar{width:120px;height:6px;border-radius:3px;background:var(--neu-soft);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--good);width:0}
+.wrap{display:grid;grid-template-columns:270px minmax(0,1fr)}
+aside{border-right:1px solid var(--line);background:var(--surface);padding:16px;display:flex;flex-direction:column;gap:12px;position:sticky;top:53px;height:calc(100vh - 53px);overflow-y:auto}
+aside>*{flex-shrink:0}
+.stat{font-size:12px;color:var(--muted)}
+#q{width:100%;height:36px;border:1px solid var(--line);border-radius:8px;padding:0 12px;background:var(--bg);color:var(--ink);font:inherit;font-size:14px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{white-space:nowrap}
+.chip{border:1px solid var(--line);background:transparent;border-radius:999px;padding:3px 12px;font-size:13px;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.quick{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.quick .btn{height:34px;font-size:13px;padding:0 8px}
+.grp{font-size:12px;color:var(--muted);margin:10px 0 4px;letter-spacing:.02em;display:flex;justify-content:space-between}
+.op{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;border:0;background:transparent;border-radius:8px;padding:6px 10px;font-size:14px}
+.op:hover{background:var(--neu-soft)}
+.op[aria-current="true"]{background:var(--accent-soft);color:var(--accent);font-weight:500}
+.op small{font-family:var(--font-mono);font-size:11px;color:var(--muted);font-weight:400;flex-shrink:0}
+.op small.all{color:var(--good)}
+main{padding:22px 32px 48px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.head{display:flex;flex-direction:column;gap:6px}
+.eyebrow{font-size:13px;color:var(--muted);font-family:var(--font-mono)}
+.titlerow{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.head h2{font-size:26px;font-weight:600;margin:0;letter-spacing:-.02em}
+.head .en{color:var(--muted);font-size:14px}
+.tagrow{display:flex;gap:6px;flex-wrap:wrap}
+.pill{font-size:12px;padding:2px 10px;border-radius:999px;background:var(--neu-soft);color:var(--muted);white-space:nowrap}
+.pill.side-w{background:var(--surface);border:1px solid var(--line);color:var(--ink)}
+.pill.side-b{background:var(--ink);color:var(--bg)}
+details.about{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 16px}
+details.about summary{cursor:pointer;font-size:14px;color:var(--muted);list-style:none;display:flex;justify-content:space-between;gap:12px}
+details.about summary::-webkit-details-marker{display:none}
+details.about summary::after{content:"핵심 아이디어";font-size:12px;color:var(--accent);white-space:nowrap}
+.sumline{color:var(--ink);font-size:14px}
+details.about:not([open]) .sumline{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+details.about[open] .ideas{margin-top:10px}
+details.about[open] summary::after{content:"접기"}
+.sum{max-width:72ch;margin:10px 0}
+.ideas{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin:0 0 4px;padding:0;list-style:none;counter-reset:i}
+.ideas li{background:var(--bg);border-radius:8px;padding:8px 12px;font-size:14px;counter-increment:i;display:flex;gap:10px}
+.ideas li::before{content:counter(i);font-family:var(--font-mono);color:var(--accent);font-weight:500}
+.tgroups{display:flex;flex-direction:column;gap:8px}
+.tgroup{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tglabel{font-size:12px;color:var(--muted);width:64px;flex-shrink:0;display:flex;align-items:center;gap:6px}
+.tab{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:5px 10px;font-size:13.5px}
+.tab:hover{border-color:var(--muted)}
+.tab[aria-selected="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);color:var(--accent);font-weight:500}
+.k{width:8px;height:8px;border-radius:50%;display:inline-block}
+.k.g{background:var(--good)} .k.b{background:var(--bad)} .k.n{background:var(--muted)}
+.tab .done{color:var(--good);font-size:12px}
+.tab .pct{font-family:var(--font-mono);font-size:11px;color:var(--warn)}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:3px;gap:2px}
+.seg button{border:0;background:transparent;border-radius:7px;padding:6px 14px;font-size:14px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--surface);font-weight:500}
+.seg.small button{padding:4px 10px;font-size:12px}
+.study{display:grid;grid-template-columns:minmax(0,calc(var(--bw) + 22px)) minmax(0,1fr);gap:24px;align-items:start}
+.boardrow{display:flex;gap:8px}
+.evalbar{width:14px;border-radius:4px;background:#2B2F33;position:relative;overflow:hidden;flex-shrink:0;border:1px solid var(--line)}
+.evalbar i{position:absolute;left:0;right:0;bottom:0;background:#F4F4F2;height:50%;transition:height .4s}
+.evalbar span{position:absolute;left:0;right:0;font-size:9px;text-align:center;font-family:var(--font-mono);z-index:2;color:#888}
+.evalbar.off{visibility:hidden}
+.boardwrap{position:relative;flex:1;min-width:0}
+#board{display:grid;grid-template-columns:repeat(8,1fr);aspect-ratio:1;width:100%;border-radius:6px;overflow:hidden;box-shadow:0 1px 0 var(--line),0 6px 20px rgba(20,30,40,.12);user-select:none;-webkit-user-select:none;touch-action:none}
+#board.play .sq{cursor:pointer}
+#arrows{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
+.ghost{position:absolute;pointer-events:none;z-index:6;background-size:88%;background-position:center;background-repeat:no-repeat;filter:drop-shadow(0 4px 6px rgba(0,0,0,.3))}
+.sq{position:relative;background:var(--sq-light)}
+.sq.d{background:var(--sq-dark)}
+.sq.last::after{content:"";position:absolute;inset:0;background:var(--sq-last)}
+.sq.sel::after{content:"";position:absolute;inset:0;background:var(--sq-sel)}
+.sq.key::before{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 4px var(--good);z-index:2}
+.sq.key.bad::before{box-shadow:inset 0 0 0 4px var(--bad)}
+.sq.hint::before{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 4px var(--warn);z-index:2}
+.sq.drag .pc{opacity:.25}
+.dot{position:absolute;left:50%;top:50%;width:26%;height:26%;margin:-13% 0 0 -13%;border-radius:50%;background:rgba(20,30,40,.28);z-index:3;pointer-events:none}
+.dot.cap{width:86%;height:86%;margin:-43% 0 0 -43%;background:transparent;box-shadow:inset 0 0 0 5px rgba(20,30,40,.28)}
+.pc{position:absolute;inset:0;background-size:88%;background-position:center;background-repeat:no-repeat;z-index:1;pointer-events:none}
+.cr{position:absolute;font-size:10px;font-family:var(--font-mono);color:var(--coord);z-index:3;line-height:1;pointer-events:none}
+.cr.r{top:3px;left:3px} .cr.f{bottom:2px;right:3px}
+.sq.d .cr{color:var(--sq-light)}
+.ctrl{display:flex;gap:6px;margin-top:10px;align-items:center;flex-wrap:wrap;padding-left:22px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;height:36px;min-width:40px;padding:0 12px;font-size:14px;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;color:var(--ink)}
+.btn:hover{border-color:var(--muted)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.btn kbd{font-family:var(--font-mono);font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:0 4px}
+.btn.pri kbd{color:var(--surface);border-color:rgba(255,255,255,.4)}
+.cnt{font-family:var(--font-mono);font-size:12px;color:var(--muted);margin-left:auto}
+.opts{display:flex;gap:14px;align-items:center;font-size:13px;color:var(--muted);padding-left:22px;margin-top:8px;flex-wrap:wrap}
+.opts label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.panel{display:flex;flex-direction:column;gap:14px;min-width:0}
+.now{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;border-left:4px solid var(--muted);min-height:120px}
+.now.g{border-left-color:var(--good)} .now.b{border-left-color:var(--bad)} .now.w{border-left-color:var(--warn)}
+.now .mv{font-family:var(--font-mono);font-size:22px;font-weight:500;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.verdict{font-family:var(--font-body);font-size:12px;font-weight:500;padding:2px 10px;border-radius:999px;white-space:nowrap}
+.verdict.g{background:var(--good-soft);color:var(--good)} .verdict.b{background:var(--bad-soft);color:var(--bad)} .verdict.n{background:var(--neu-soft);color:var(--muted)} .verdict.w{background:var(--warn-soft);color:var(--warn)}
+.now p{margin:8px 0 0;max-width:62ch}
+.now p.empty{color:var(--muted);font-size:14px}
+.eng{margin-top:10px;font-size:13px;color:var(--muted);font-family:var(--font-mono)}
+.eng b{color:var(--ink);font-weight:500}
+.acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.acts .btn{height:32px;font-size:13px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.box h3{font-size:12px;font-weight:500;color:var(--muted);margin:0 0 8px}
+.cands{display:flex;flex-wrap:wrap;gap:6px}
+.cand{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:4px 10px;font-family:var(--font-mono);font-size:14px;display:inline-flex;align-items:center;gap:6px}
+.cand:hover{border-color:var(--muted)}
+.cand.next{border-color:var(--accent);background:var(--accent-soft)}
+.cand small{font-family:var(--font-body);font-size:11px;color:var(--muted)}
+.moves{font-family:var(--font-mono);font-size:14px;display:flex;flex-wrap:wrap;gap:2px 4px;align-items:baseline;max-height:200px;overflow-y:auto}
+.moves .no{color:var(--muted);font-size:12px;margin-left:6px}
+.moves .no:first-child{margin-left:0}
+.m{border:0;background:transparent;border-radius:5px;padding:2px 6px;font-family:var(--font-mono);font-size:14px}
+button.m:hover{background:var(--neu-soft)}
+.m.pre{color:var(--muted)}
+.m.b{color:var(--bad)}
+.m.cur{background:var(--accent);color:var(--surface)}
+.m.ok{color:var(--good)} .m.miss{color:var(--warn)} .m.hid{color:var(--muted)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:6px}
+.sw{width:14px;height:14px;border-radius:3px;display:inline-block}
+.sw.ar{height:4px;border-radius:2px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.donebox{display:flex;align-items:center;gap:8px;font-size:14px}
+.donebox input{width:18px;height:18px;accent-color:var(--good)}
+.hide{display:none!important}
+.why{font-size:15px}
+details.more{margin-top:10px}
+details.more summary{cursor:pointer;font-size:13px;color:var(--accent)}
+details.plansbox summary{cursor:pointer;list-style:none}
+details.plansbox summary::-webkit-details-marker{display:none}
+.plans{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.plans li{display:flex;gap:8px;font-size:14px;align-items:baseline}
+.plans .who{flex-shrink:0;font-size:11px;padding:1px 8px;border-radius:999px;background:var(--neu-soft);color:var(--muted)}
+.plans .who.w{background:var(--surface);border:1px solid var(--line);color:var(--ink)}
+.plans .who.b{background:var(--ink);color:var(--bg)}
+.intro{background:var(--accent-soft);border:1px solid var(--accent);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.intro h2{font-size:18px;margin:0}
+.intro ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+main #rep{display:none}
+main.repmode>*{display:none}
+main.repmode #rep{display:flex;flex-direction:column;gap:16px}
+.slots{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.slot{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.slot h3{margin:0;font-size:15px}
+.slot select{height:36px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;font-size:14px;padding:0 8px;flex:1;min-width:0}
+.repop{border-top:1px solid var(--line);padding-top:8px}
+.repop .t{display:flex;justify-content:space-between;align-items:center;font-weight:500;font-size:14px}
+.repop label{display:flex;gap:6px;font-size:13px;align-items:center;padding:2px 0}
+.repstats{display:flex;gap:10px;flex-wrap:wrap}
+.repstats div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:120px}
+.repstats b{display:block;font-size:22px;font-family:var(--font-mono);font-weight:500}
+.repstats span{font-size:12px;color:var(--muted)}
+:root[data-board="green"]{--sq-light:#EEEED2;--sq-dark:#769656;--coord:#4f6b35}
+:root[data-board="brown"]{--sq-light:#F0D9B5;--sq-dark:#B58863;--coord:#7a5a3a}
+@media (min-width:1101px){.study>div:first-child{position:sticky;top:64px}}
+#setbtn{height:34px}
+.settings{position:absolute;right:16px;top:56px;width:min(92vw,380px);background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:16px;z-index:70;display:flex;flex-direction:column;gap:14px;font-size:14px}
+.settings h3{margin:0;font-size:15px;font-weight:600}
+.settings .lab{font-size:12px;color:var(--muted);margin-bottom:6px}
+.settings textarea{width:100%;height:70px;font-family:var(--font-mono);font-size:11px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);padding:6px}
+.settings label.ck{display:flex;gap:8px;align-items:center}
+.linesel{display:none;width:100%;height:40px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-size:14px;padding:0 8px}
+.star{border:1px solid var(--line);background:var(--surface);border-radius:8px;height:32px;padding:0 10px;font-size:13px}
+.star[aria-pressed="true"]{color:#B8860B;border-color:#D4A72C}
+.tab .st{color:#C99A1E;font-size:12px}
+.tab .due{width:6px;height:6px;border-radius:50%;background:var(--warn)}
+.ecobar{display:flex;align-items:baseline;gap:8px;font-size:14px;margin:0 0 8px 22px;min-height:22px;flex-wrap:wrap}
+.ecobar .eco{font-family:var(--font-mono);font-size:12px;background:var(--ink);color:var(--bg);border-radius:4px;padding:1px 6px}
+.ecobar small{color:var(--muted);font-size:12px}
+.quick .wide{grid-column:span 2}
+main #dict{display:none}
+main.dictmode>*{display:none}
+main.dictmode #dict{display:flex;flex-direction:column;gap:14px}
+.dhead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.dhead h2{font-size:24px;font-weight:600;margin:0}
+#dq{width:100%;max-width:520px;height:40px;border:1px solid var(--line);border-radius:8px;padding:0 12px;background:var(--surface);color:var(--ink);font:inherit}
+.drow{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:12px;align-items:baseline;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:transparent;padding:9px 6px}
+.drow:hover{background:var(--surface)}
+.drow .c{font-family:var(--font-mono);font-size:12px;color:var(--muted)}
+.drow .n{font-size:14px}
+.drow .n small{display:block;font-family:var(--font-mono);font-size:12px;color:var(--muted);margin-top:2px}
+.drow .tagx{font-size:11px}
+#dlist{background:var(--bg)}
+.dmore{font-size:13px;color:var(--muted);padding:8px 6px}
+.cands .sub{width:100%;font-size:11px;color:var(--muted);margin-top:4px}
+.scrim{display:none}
+footer{font-size:12px;color:var(--muted);padding:0 32px 24px;max-width:120ch}
+@media (max-width:1100px){.study{grid-template-columns:1fr}.study>div:first-child{max-width:calc(var(--bw) + 22px)}}
+@media (max-width:900px){
+  #menu{display:inline-flex}
+  .top h1{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #sizes,#sizes~*{display:none}
+  .toolbar .row{display:none}
+  .evalbar.off{display:none}
+  .boardrow{gap:6px}
+  .prog .bar{width:60px}
+  .wrap{grid-template-columns:1fr}
+  aside{position:fixed;top:0;left:0;bottom:0;height:100%;width:min(86vw,340px);z-index:60;transform:translateX(-102%);transition:transform .2s;box-shadow:0 0 30px rgba(0,0,0,.2)}
+  aside.open{transform:none}
+  .scrim.open{display:block;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:55}
+  main{padding:16px 14px 40px}
+  .top{padding:10px 14px}
+  .tglabel{width:100%}
+  .tgroups{display:none}
+  .linesel{display:block}
+  footer{padding:0 14px 20px}
+  .ctrl,.opts{padding-left:0}
+}
+@media (max-width:420px){.prog{display:none}}
+@media (prefers-reduced-motion:reduce){.evalbar i,aside{transition:none}}
+</style>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2C5A86">
+<link rel="apple-touch-icon" href="icon-192.png">
+</head>
+<body>
+<header class="top">
+  <button class="btn" id="menu" aria-label="오프닝 목록 열기">☰ 목록</button>
+  <h1>체스 오프닝 학습실</h1>
+  <div class="prog"><span id="progtxt">완료 0 / 0</span><span class="bar"><i id="progbar"></i></span></div>
+  <button class="btn" id="setbtn" aria-expanded="false" aria-controls="settings">설정</button>
+  <div class="settings hide" id="settings" role="dialog" aria-label="설정">
+    <h3>설정</h3>
+    <div><div class="lab">보드 색</div><div class="seg small" id="s-theme"><button data-v="blue">파랑</button><button data-v="green">초록</button><button data-v="brown">갈색</button></div></div>
+    <div><div class="lab">엔진 분석 시간 (길수록 정확하지만 느림)</div><div class="seg small" id="s-eng"><button data-v="600">빠름</button><button data-v="1100">보통</button><button data-v="2500">정밀</button></div></div>
+    <div><div class="lab">연습 중 상대 수 속도</div><div class="seg small" id="s-speed"><button data-v="200">빠름</button><button data-v="420">보통</button><button data-v="900">느림</button></div></div>
+    <label class="ck"><input type="checkbox" id="s-skip">연습할 때 앞 라인과 같은 공통 수순은 자동으로 두기</label>
+    <label class="ck"><input type="checkbox" id="s-auto">라인을 끝내면 다음 라인 연습 자동 시작</label>
+    <div><div class="lab">학습 기록 백업 (다른 브라우저로 옮길 때)</div>
+      <div class="row"><button class="btn" id="s-copy" style="height:32px;font-size:13px">기록 복사</button><button class="btn" id="s-load" style="height:32px;font-size:13px">붙여넣은 기록 적용</button></div>
+      <textarea id="s-text" placeholder="복사한 기록을 여기에 붙여넣고 '적용'을 누르세요" aria-label="기록 붙여넣기"></textarea>
+      <div class="stat" id="s-msg"></div></div>
+    <button class="btn" id="s-intro">처음 안내 다시 보기</button>
+    <button class="btn" id="s-close">닫기</button>
+  </div>
+</header>
+<div class="scrim" id="scrim"></div>
+<div class="wrap">
+  <aside id="aside">
+    <input id="q" type="search" placeholder="이름, 함정, 수순(e4 c5)…" aria-label="오프닝 검색">
+    <div class="chips" role="group" aria-label="진영 필터">
+      <button class="chip" data-f="all" aria-pressed="true">전체</button>
+      <button class="chip" data-f="백" aria-pressed="false">백으로</button>
+      <button class="chip" data-f="흑" aria-pressed="false">흑으로</button>
+      <button class="chip" data-f="star" aria-pressed="false">★ 즐겨찾기</button>
+    </div>
+    <div class="quick">
+      <button class="btn" id="rand">무작위 연습</button>
+      <button class="btn" id="review">오늘 복습</button>
+      <button class="btn wide pri" id="openrep">내 레퍼토리 훈련</button>
+      <button class="btn wide" id="opendict">오프닝 사전 (Lichess 데이터)</button>
+    </div>
+    <div class="stat" id="stat"></div>
+    <nav id="list" aria-label="오프닝 목록"></nav>
+  </aside>
+  <main id="main">
+    <section id="rep" aria-label="내 레퍼토리">
+      <div class="dhead"><h2>내 레퍼토리</h2><button class="btn" id="closerep">← 학습으로 돌아가기</button></div>
+      <p class="sum" style="margin:0;color:var(--muted)">실전에서 쓸 오프닝을 진영별로 하나씩 고르세요. 고른 라인에서 <b>내 차례인 위치</b>가 하나하나 카드가 되고, 새 수는 먼저 보여준 뒤 익히게 하고, 익힌 수는 1일·3일·8일… 간격으로 다시 물어봐요. 맞힌 카드는 간격이 늘고, 틀린 카드는 같은 날 다시 나와요.</p>
+      <div class="repstats" id="repstats"></div>
+      <div class="row"><button class="btn pri" id="trainstart">훈련 시작</button>
+        <span style="font-size:13px;color:var(--muted)">하루 새 카드</span>
+        <div class="seg small" id="s-newpd"><button data-v="5">5</button><button data-v="10">10</button><button data-v="20">20</button><button data-v="40">40</button></div></div>
+      <div class="slots" id="slots"></div>
+    </section>
+    <section class="intro hide" id="intro">
+      <h2>처음이라면 이렇게 써 보세요</h2>
+      <ol>
+        <li><b>수순 보기</b>로 오프닝의 흐름과 수마다의 이유를 읽어요. 빨간 칩은 "이렇게 두면 안 되는 수"예요.</li>
+        <li><b>따라 두기 연습</b>으로 라인을 직접 두어 봐요. 틀리면 왜 안 되는지 알려줘요.</li>
+        <li>익숙해지면 <b>내 레퍼토리</b>에서 백 1개, 흑 2개를 골라 매일 몇 분씩 훈련해요. 잊을 때쯤 다시 물어봐요.</li>
+      </ol>
+      <div class="row"><button class="btn pri" id="intro-rep">레퍼토리 만들기</button><button class="btn" id="intro-close">둘러보기</button></div>
+    </section>
+    <section id="dict" aria-label="오프닝 사전">
+      <div class="dhead"><h2>오프닝 사전</h2><button class="btn" id="closedict">← 학습으로 돌아가기</button></div>
+      <p class="sum" style="margin:0;color:var(--muted)">Lichess가 공개한 오프닝 이름 데이터(CC0)의 모든 변화예요. 항목을 누르면 그 위치까지 두어진 상태로 자유 실험이 열려서, 이어서 두거나 엔진 평가를 볼 수 있어요. "해설 있음"은 이 학습실의 라인으로 끝까지 연결되는 변화예요.</p>
+      <input id="dq" type="search" placeholder="Najdorf, 드래곤, B90, Marshall…" aria-label="오프닝 사전 검색">
+      <div class="chips" id="dletters"></div>
+      <div class="stat" id="dcount"></div>
+      <div id="dlist"></div>
+    </section>
+    <section class="head">
+      <div class="eyebrow" id="eyebrow"></div>
+      <div class="titlerow"><h2 id="name"></h2><span class="en" id="en"></span></div>
+      <div class="tagrow" id="tags"></div>
+    </section>
+    <details class="about" id="about">
+      <summary><span id="sum" class="sumline"></span></summary>
+      <ol class="ideas" id="ideas" aria-label="핵심 아이디어"></ol>
+    </details>
+    <div class="tgroups" id="tabs" role="tablist" aria-label="라인 선택"></div>
+    <select class="linesel" id="linesel" aria-label="라인 선택"></select>
+    <div class="toolbar">
+      <div class="seg" id="modes" role="group" aria-label="학습 모드">
+        <button data-m="view" aria-pressed="true">수순 보기</button>
+        <button data-m="drill" aria-pressed="false">따라 두기 연습</button>
+        <button data-m="free" aria-pressed="false">자유 실험</button>
+      </div>
+      <div class="row" style="font-size:12px;color:var(--muted)">보드
+        <div class="seg small" id="sizes" role="group" aria-label="보드 크기">
+          <button data-s="380" aria-pressed="false">작게</button>
+          <button data-s="460" aria-pressed="true">보통</button>
+          <button data-s="560" aria-pressed="false">크게</button>
+        </div>
+      </div>
+    </div>
+    <section class="study">
+      <div>
+        <div class="ecobar" id="ecobar"></div>
+        <div class="boardrow">
+          <div class="evalbar off" id="evalbar" title="엔진 평가 (흰색이 많을수록 백 유리)"><i id="evalfill"></i><span id="evaltxt" style="bottom:2px"></span></div>
+          <div class="boardwrap" id="boardwrap">
+            <div id="board" role="grid" aria-label="체스판"></div>
+            <svg id="arrows" viewBox="0 0 8 8" aria-hidden="true"></svg>
+          </div>
+        </div>
+        <div class="ctrl" id="ctrl-view">
+          <button class="btn" id="first" aria-label="처음으로">⏮</button>
+          <button class="btn" id="prev" aria-label="이전 수">◀</button>
+          <button class="btn pri" id="next" aria-label="다음 수">▶</button>
+          <button class="btn" id="last" aria-label="끝으로">⏭</button>
+          <button class="btn" id="flip" title="단축키 F">뒤집기</button>
+          <span class="cnt" id="cnt"></span>
+        </div>
+        <div class="opts" id="opts-view">
+          <label><input type="checkbox" id="showNext" checked>다음 수 화살표</label>
+          <label><input type="checkbox" id="showEng">엔진 최선수 화살표</label>
+          <a class="btn" id="lichess" target="_blank" rel="noopener" style="height:30px;font-size:12px">Lichess에서 분석</a>
+        </div>
+        <div class="ctrl hide" id="ctrl-drill">
+          <button class="btn" id="d-restart">처음부터 <kbd>R</kbd></button>
+          <button class="btn" id="d-hint">힌트 <kbd>H</kbd></button>
+          <button class="btn" id="d-show">정답 <kbd>A</kbd></button>
+          <button class="btn" id="d-color">색 바꾸기</button>
+          <span class="cnt" id="d-cnt"></span>
+        </div>
+        <div class="ctrl hide" id="ctrl-train">
+          <button class="btn" id="t-hint">힌트 <kbd>H</kbd></button>
+          <button class="btn" id="t-show">정답 <kbd>A</kbd></button>
+          <button class="btn" id="t-next">다음 카드 <kbd>N</kbd></button>
+          <button class="btn" id="t-stop">훈련 끝내기</button>
+          <span class="cnt" id="t-cnt"></span>
+        </div>
+        <div class="ctrl hide" id="ctrl-free">
+          <button class="btn" id="f-undo">무르기 <kbd>←</kbd></button>
+          <button class="btn" id="f-reset">처음 위치</button>
+          <button class="btn" id="f-best">엔진 추천 <kbd>E</kbd></button>
+          <button class="btn" id="f-flip">뒤집기</button>
+          <span class="cnt" id="f-cnt"></span>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="now" id="now" aria-live="polite"></div>
+        <div class="box" id="explore"><h3>이 위치에서 이어지는 수</h3><div class="cands" id="cands"></div></div>
+        <div class="box"><h3 id="moveshead">수순</h3><div class="moves" id="moves"></div></div>
+        <details class="box plansbox" id="plansbox" open><summary><h3>오프닝이 끝난 뒤의 계획 ▾</h3></summary><ul class="plans" id="plans"></ul></details>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--sq-last)"></i>방금 둔 수</span>
+          <span><i class="sw ar" style="background:var(--arrow-next)"></i>다음 수</span>
+          <span><i class="sw ar" style="background:var(--arrow-eng)"></i>엔진 추천</span>
+          <span><i class="sw" style="box-shadow:inset 0 0 0 3px var(--good)"></i>노리는 칸</span>
+          <span><i class="sw" style="box-shadow:inset 0 0 0 3px var(--bad)"></i>약점·위협</span>
+        </div>
+        <div class="row">
+          <label class="donebox"><input type="checkbox" id="done">이 라인 학습 완료</label>
+          <button class="star" id="star" aria-pressed="false">☆ 즐겨찾기</button>
+          <button class="btn" id="nextline" style="margin-left:auto">다음 라인 →</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<footer>조작: 기물을 끌어서 놓거나, 클릭한 뒤 갈 칸을 클릭. 단축키: 보기 ← → Space Home End F · 연습 H(힌트) A(정답) R(처음부터) · 자유 ←(무르기) E(엔진 추천) · S(즐겨찾기). 마지막으로 보던 라인과 모드는 다음에 열 때 이어서 보여드려요. 모든 수순은 체스 규칙 엔진으로 합법성을 검증했습니다. 연습·자유 실험의 실시간 평가는 브라우저에서 1초 남짓 도는 <span id="engname">엔진 준비 중</span> 분석이라 갬빗처럼 장기 보상이 있는 수를 실제보다 나쁘게 볼 수 있어요. 수순 보기의 평가는 미리 계산한 Stockfish 17(깊이 17) 결과예요. 자료에 있는 수는 자료 평가를 먼저 참고하세요. 학습 기록은 이 브라우저에만 저장됩니다. 기물 그림: Colin M.L. Burnett (CC BY-SA 3.0). 엔진: Stockfish (GPL). 엔진 파일은 처음 한 번만 받고 이후엔 브라우저 캐시를 써요.</footer>
+<script src="chess.js"></script>
+<script src="data.js"></script>
+<script src="eco.js"></script>
+<script>if("serviceWorker"in navigator&&/^https?:/.test(location.protocol)&&!/claude\.ai|claudeusercontent/.test(location.hostname)){try{navigator.serviceWorker.register("sw.js").catch(()=>{})}catch(e){}}</script>
+
+<script>
+const KIND={g:"정상",n:"변화",b:"함정·실수"};
+const VERD={g:"좋은 수",b:"나쁜 수",n:"보통"};
+const START_FEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const RM=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+let filt="all",query="",oi=0,li=0,st=0,flipped=false,mode="view";
+let game=null,sel=null,targets=[],hintSq=[],lastMv=[],arrowsX=[],anim=null,drag=null;
+let drill=null,freeStart=START_FEN,evalTok=0,freePrefix=[],pendingFree=null,dLetter="",dShown=150;
+const ECOE=ECO.E,ECOP=ECO.P;
+const store=(k,d)=>{try{return JSON.parse(localStorage.getItem(k)||"null")??d}catch(e){return d}};
+const put=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+let done=store("chess-done",{}),stats=store("chess-stats",{}),stars=store("chess-stars",{});
+const SET=Object.assign({theme:"blue",eng:1100,speed:420,skip:true,auto:false,showNext:true,showEng:false,newpd:10},store("chess-settings",{}));
+const saveSet=()=>put("chess-settings",SET);const DAY=864e5;
+const $=id=>document.getElementById(id);
+const key=(o,l)=>o.id+":"+l;
+const posKey=fen=>fen.split(" ").slice(0,3).join(" ");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const L=()=>DATA[oi].lines[li];
+const SEARCH=DATA.map(o=>(o.name+" "+o.en+" "+o.style+" "+o.group+" "+o.lines.map(l=>l.name+" | "+l.steps.map(s=>s.l.replace(/^\d+\.(\.\.)?/,"").replace(/[?!+#]/g,"")).join(" ")).join(" | ")).toLowerCase());
+
+/* ───── 엔진 ───── */
+const Engine=(function(){
+  let w=null,ok=false,ready=null,cb=null,lastScore=null,lastPv=[],queue=Promise.resolve(),gen=0,name="";
+  function onMsg(e){const l=String(e.data);const m=l.match(/score (cp|mate) (-?\d+)/);
+    if(m&&!/ (lower|upper)bound/.test(l)){const v=+m[2];lastScore=m[1]==="cp"?v:(v>0?100000-v:-100000-v);const pv=l.match(/ pv (.+)$/);if(pv)lastPv=pv[1].trim().split(" ")}
+    if(l.startsWith("bestmove")&&cb){const f=cb;cb=null;f({best:l.split(" ")[1],score:lastScore,pv:lastPv})}}
+  function start(make,label,ms){return new Promise(res=>{let wk;try{wk=make()}catch(e){res(null);return}
+    let done=false;const t=setTimeout(()=>{if(!done){done=true;try{wk.terminate()}catch(e){}res(null)}},ms);
+    wk.onmessage=e=>{if(!done&&String(e.data).startsWith("uciok")){done=true;clearTimeout(t);wk.onmessage=onMsg;name=label;res(wk)}};
+    wk.onerror=()=>{if(!done){done=true;clearTimeout(t);try{wk.terminate()}catch(e){}res(null)}};
+    wk.postMessage("uci")})}
+  function make17(){if(window.SF17_JS&&window.SF17_WASM){
+      const pre="const __b=Uint8Array.from(atob('"+window.SF17_WASM+"'),c=>c.charCodeAt(0));self.fetch=()=>Promise.resolve(new Response(__b,{headers:{'Content-Type':'application/wasm'}}));\n";
+      return new Worker(URL.createObjectURL(new Blob([pre,window.SF17_JS],{type:"text/javascript"})))}
+    return new Worker("sf17.js")}
+  function make10(){return window.SF_SRC?new Worker(URL.createObjectURL(new Blob([window.SF_SRC],{type:"text/javascript"}))):new Worker("stockfish.js")}
+  ok=true;
+  ready=start(make17,"Stockfish 17 (경량)",15000).then(wk=>wk||start(make10,"Stockfish 10",15000)).then(wk=>{w=wk;if(!w){ok=false;return}
+    w.postMessage("setoption name Hash value 32");w.postMessage("isready");const tag=document.getElementById("engname");if(tag)tag.textContent=name});
+  function search(fen,ms,only){return ready.then(()=>new Promise(res=>{if(!w){res({best:null,score:null,pv:[]});return}lastScore=null;lastPv=[];cb=res;w.postMessage("position fen "+fen);w.postMessage("go movetime "+ms+(only?" searchmoves "+only:""))}))}
+  function run(task){const g=++gen;const p=queue.then(()=>g===gen?task(g):null);queue=p.catch(()=>{});return p}
+  return{get ok(){return ok},get name(){return name},
+    evalMove(fen,uci){return run(async g=>{const a=await search(fen,SET.eng);if(g!==gen||!a.best)return null;if(a.best===uci)return{best:a.best,bestScore:a.score,userScore:a.score,bestPv:a.pv,userPv:a.pv};
+      const b=await search(fen,Math.round(SET.eng*.8),uci);return{best:a.best,bestScore:a.score,userScore:b.score,bestPv:a.pv,userPv:b.pv.length?b.pv:[uci]}})},
+    best(fen){return run(()=>search(fen,Math.round(SET.eng*1.2)))},
+    cancel(){gen++;evalTok++;if(cb&&w)w.postMessage("stop")}};
+})();
+function classify(loss){if(loss<=20)return["최선급","g"];if(loss<=60)return["좋은 수","g"];if(loss<=120)return["부정확","w"];if(loss<=300)return["실수","b"];return["블런더","b"]}
+function whiteCp(s,stm){return s==null?null:(stm==="w"?s:-s)}
+function fmtScore(s,stm){const wv=whiteCp(s,stm);if(wv==null)return"?";
+  if(Math.abs(wv)>=90000){const n=100000-Math.abs(wv);return(wv>0?"백":"흑")+" "+n+"수 메이트"}
+  return(wv>=0?"+":"")+(wv/100).toFixed(1)}
+function fmtW(wv){if(wv==null)return"?";if(Math.abs(wv)>=90000){const n=100000-Math.abs(wv);return n===0?"메이트":(wv>0?"백":"흑")+" "+n+"수 메이트"}return(wv>=0?"+":"")+(wv/100).toFixed(1)}
+function setEval(wv){const bar=$("evalbar");if(wv==null){return}bar.classList.remove("off");
+  let pct=Math.abs(wv)>=90000?(wv>0?100:0):50+Math.max(-45,Math.min(45,wv/12));
+  $("evalfill").style.height=pct+"%";$("evaltxt").textContent=Math.abs(wv)>=90000?"M":(wv/100).toFixed(1);
+  $("evaltxt").style.color=pct>=50?"#555":"#ccc";$("evaltxt").style.bottom=pct>=50?"2px":"auto";$("evaltxt").style.top=pct>=50?"auto":"2px"}
+const PV={p:1,n:3,b:3,r:5,q:9,k:0},PNAME={p:"폰",n:"나이트",b:"비숍",r:"룩",q:"퀸",k:"킹"};
+function pvSan(fen,pv,max){const c=new Chess(fen);const p=fen.split(" ");let n=+p[5],w=p[1]==="w";const out=[];
+  for(let i=0;i<Math.min(pv.length,max||8);i++){const u=pv[i];const m=c.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||"q"});if(!m)break;
+    out.push((w?n+".":(i===0?n+"...":""))+m.san);if(!w)n++;w=!w}return out.join(" ")}
+function jo(w,a,b){const c=w.charCodeAt(w.length-1);return(c>=0xAC00&&c<=0xD7A3&&(c-0xAC00)%28)?a:b}
+function material(c){const s={w:0,b:0};c.board().forEach(r=>r.forEach(x=>{if(x)s[x.color]+=PV[x.type]}));return s}
+function explainMove(fen,pv,loss){if(!pv||!pv.length)return"";const c=new Chess(fen);const me=c.turn(),op=me==="w"?"b":"w";const m0=material(c);
+  let reply=null,mated=null,plies=0,mine=null;
+  for(let i=0;i<Math.min(pv.length,8);i++){const u=pv[i];const m=c.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||"q"});if(!m)break;plies++;
+    if(i===0)mine=m;if(i===1)reply=m;if(c.in_checkmate()){mated=c.turn();break}}
+  const m1=material(c);const net=(m0[me]-m1[me])-(m0[op]-m1[op]);const parts=[];
+  if(reply){if(reply.san.includes("+"))parts.push("상대가 "+reply.san+" 체크로 반격해요");
+    else if(reply.captured&&mine&&reply.to===mine.to)parts.push(mine.captured?(PV[mine.piece]>PV[mine.captured]?PNAME[mine.piece]+jo(PNAME[mine.piece],"으로","로")+" "+PNAME[mine.captured]+jo(PNAME[mine.captured],"을","를")+" 잡았지만 "+reply.san+"로 되잡혀 손해 보는 교환이 돼요":"교환 자체는 대등하지만 "+reply.san+"로 되잡은 뒤의 형세가 상대에게 유리해요"):"방금 옮긴 "+PNAME[mine.piece]+jo(PNAME[mine.piece],"이","가")+" "+reply.san+"로 바로 잡혀요");
+    else if(reply.captured)parts.push("상대가 "+reply.san+"로 "+PNAME[reply.captured]+jo(PNAME[reply.captured],"을","를")+" 잡아요");
+    else parts.push("상대의 좋은 응수는 "+reply.san+"예요")}
+  if(mated===me)parts.push("이어지는 수순에서 메이트당해요");
+  else if(net>=8)parts.push("결국 퀸 수준의 물질을 잃어요");
+  else if(net>=5)parts.push("결국 룩 수준의 물질을 잃어요");
+  else if(net>=3)parts.push("결국 기물 하나 수준의 물질을 잃어요");
+  else if(net>=2)parts.push("결국 약 2폰 분량의 물질을 잃어요");
+  else if(net>=1)parts.push("결국 폰 하나를 잃어요");
+  else if(loss>=60)parts.push("당장 물질 손해는 없지만 형세가 "+(loss/100).toFixed(1)+"폰만큼 나빠져요 (전개·킹 안전·구조 약화)");
+  return parts.join(". ")+"."}
+function sanOf(fen,uci){try{const c=new Chess(fen);const m=c.move({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]||"q"});return m?m.san:uci}catch(e){return uci}}
+
+/* ───── 오프닝 이름 (Lichess 데이터) ───── */
+function keysFrom(startFen,g){const c=new Chess(startFen);const ks=[posKey(c.fen())];if(g)g.history({verbose:true}).forEach(m=>{c.move(m);ks.push(posKey(c.fen()))});return ks}
+function viewKeys(n){const ks=[posKey(START_FEN)];for(let i=0;i<n;i++)ks.push(posKey(L().steps[i].F));return ks}
+function histKeys(){if(mode==="view")return viewKeys(st);if(mode==="train")return trainKeys.concat(train&&train.cur&&game?keysFrom(train.cur.c.fen,game).slice(1):[]);if(mode==="drill")return keysFrom(START_FEN,game);return freePrefix.concat(keysFrom(freeStart,game).slice(1))}
+function updateEco(){const ks=histKeys();let hit=-1,at=-1;for(let i=ks.length-1;i>=0;i--){if(ks[i] in ECOP){hit=ECOP[ks[i]];at=i;break}}
+  const el=$("ecobar");if(hit<0){el.innerHTML='<small>시작 위치 · 수를 두면 오프닝 이름이 표시돼요</small>';el.title="";return}const e=ECOE[hit];
+  el.innerHTML='<span class="eco">'+e[0]+"</span><b>"+esc(e[4]||e[1])+"</b>"+(e[2]?"<span>"+esc(e[2])+"</span>":"")+(at<ks.length-1?"<small>· 이후 이름 없는 수순</small>":"");
+  el.title=e[1]+(e[2]?": "+e[2]:"")}
+function namedKids(fen,exclude){const c=new Chess(fen);const out=[];c.moves({verbose:true}).forEach(m=>{c.move(m);const k=posKey(c.fen());c.undo();const u=m.from+m.to+(m.promotion||"");if(k in ECOP&&!exclude.has(u))out.push([u,m.san,ECOP[k]])});return out}
+
+/* ───── 목록·개요 ───── */
+function progress(){let t=0,d=0;DATA.forEach(o=>o.lines.forEach((l,i)=>{t++;if(done[key(o,i)])d++}));
+  if(typeof repBadge==="function")repBadge();
+  $("progtxt").textContent="완료 "+d+" / "+t;$("progbar").style.width=(t?d/t*100:0)+"%";
+  const rv=reviewList().length;$("review").textContent="오늘 복습"+(rv?" ("+rv+")":"")}
+function visibleOps(){const q=query.trim().toLowerCase();return DATA.map((o,i)=>i).filter(i=>{const o=DATA[i];
+  if(filt==="star"){if(!o.lines.some((l,j)=>stars[key(o,j)]))return false}
+  else if(filt!=="all"&&o.side!==filt&&o.side!=="공통")return false;return !q||SEARCH[i].includes(q)})}
+function list(){const groups={};visibleOps().forEach(i=>{const g=DATA[i].group;(groups[g]=groups[g]||[]).push(i)});
+  let h="";for(const g in groups){let gt=0,gd=0;groups[g].forEach(i=>DATA[i].lines.forEach((l,j)=>{gt++;if(done[key(DATA[i],j)])gd++}));
+    h+='<div class="grp"><span>'+g+"</span><span>"+gd+"/"+gt+"</span></div>";
+    groups[g].forEach(i=>{const o=DATA[i];const n=o.lines.length,d=o.lines.filter((l,j)=>done[key(o,j)]).length;
+      h+='<button class="op" data-i="'+i+'" aria-current="'+(i===oi)+'"><span>'+o.name+'</span><small class="'+(d===n?"all":"")+'">'+d+"/"+n+"</small></button>"})}
+  $("list").innerHTML=h||(filt==="star"?'<div class="grp">아직 즐겨찾기한 라인이 없어요. 라인 아래 ☆ 버튼으로 추가하세요.</div>':'<div class="grp">검색 결과가 없어요. 다른 이름이나 수순으로 찾아보세요.</div>');
+  $("list").querySelectorAll(".op").forEach(b=>b.onclick=()=>{openOp(+b.dataset.i);drawer(false)})}
+function openOp(i,keepHash,lineIdx,ply){oi=i;const o=DATA[oi];
+  if(!keepHash)try{history.replaceState(null,"","#"+o.id)}catch(e){}
+  $("eyebrow").textContent=o.group;$("name").textContent=o.name;$("en").textContent=o.en;
+  const cnt={g:0,n:0,b:0};o.lines.forEach(l=>cnt[l.kind]++);
+  $("tags").innerHTML='<span class="pill '+(o.side==="흑"?"side-b":"side-w")+'">'+(o.side==="공통"?"백·흑 공통":o.side+"으로 두는 오프닝")+'</span><span class="pill">'+o.style+'</span><span class="pill">라인 '+o.lines.length+(cnt.b?" · 함정·실수 "+cnt.b:"")+"</span>";
+  $("sum").textContent=o.summary;$("ideas").innerHTML=o.ideas.map(x=>"<li>"+esc(x)+"</li>").join("");
+  $("plans").innerHTML=(o.plans||[]).map(([w,p])=>'<li><span class="who '+(w==="백"?"w":w==="흑"?"b":"")+'">'+w+"</span><span>"+esc(p)+"</span></li>").join("");$("plansbox").classList.toggle("hide",!(o.plans||[]).length);
+  list();openLine(lineIdx||0,ply)}
+function tabs(){const o=DATA[oi];let h="";
+  ["g","n","b"].forEach(k=>{const idx=o.lines.map((l,i)=>i).filter(i=>o.lines[i].kind===k);if(!idx.length)return;
+    h+='<div class="tgroup"><span class="tglabel"><i class="k '+k+'"></i>'+KIND[k]+"</span>";
+    idx.forEach(i=>{const l=o.lines[i],kk=key(o,i),s=stats[kk];
+      h+='<button class="tab" role="tab" data-i="'+i+'" aria-selected="'+(i===li)+'">'+(stars[kk]?'<span class="st">★</span>':"")+esc(l.name)+(done[kk]?'<span class="done">✓</span>':s?'<span class="pct">'+Math.round(s.last*100)+"%</span>":"")+(s&&s.due<=Date.now()?'<i class="due" title="복습할 때가 됐어요"></i>':"")+"</button>"});
+    h+="</div>"});
+  $("tabs").innerHTML=h;$("tabs").querySelectorAll(".tab").forEach(b=>b.onclick=()=>openLine(+b.dataset.i));
+  $("linesel").innerHTML=o.lines.map((l,i)=>'<option value="'+i+'"'+(i===li?" selected":"")+">["+KIND[l.kind]+"] "+(stars[key(o,i)]?"★ ":"")+esc(l.name)+(done[key(o,i)]?" ✓":"")+"</option>").join("");
+  $("star").setAttribute("aria-pressed",!!stars[key(o,li)]);$("star").textContent=stars[key(o,li)]?"★ 즐겨찾기됨":"☆ 즐겨찾기"}
+function openLine(i,ply){li=i;st=ply!==undefined?ply:L().start;flipped=DATA[oi].side==="흑";tabs();$("done").checked=!!done[key(DATA[oi],li)];setMode(mode,true);nextBtn();saveLast()}
+function saveLast(){put("chess-last",{id:DATA[oi].id,li,mode})}
+
+/* ───── 모드 ───── */
+function setMode(m,fresh){Engine.cancel();if(m!=="train")train=null;mode=m;if(DATA[oi])put("chess-last",{id:DATA[oi].id,li,mode:m});sel=null;targets=[];hintSq=[];arrowsX=[];anim=null;
+  document.querySelectorAll("#modes button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===m));
+  ["view","drill","free","train"].forEach(x=>$("ctrl-"+x).classList.toggle("hide",m!==x));
+  $("opts-view").classList.toggle("hide",m!=="view");$("explore").classList.toggle("hide",m==="drill"||m==="train");
+  $("board").classList.toggle("play",m!=="view");$("evalbar").classList.add("off");
+  if(m==="view"){$("moveshead").textContent="수순 (클릭해서 이동)";viewMoves();draw()}
+  else if(m==="drill"){$("moveshead").textContent="연습 진행";startDrill()}
+  else if(m==="train"){$("moveshead").textContent="이 위치까지의 수순";if(train&&train.cur)showCard();else{setMode("view",true);return}}
+  else{$("moveshead").textContent="내가 둔 수";if(pendingFree){const p=pendingFree;pendingFree=null;startFreeMoves(p)}else startFree(fresh?curFen():freeStart,fresh?viewKeys(st):freePrefix)}}
+function curFen(){return st>0?L().steps[st-1].F:START_FEN}
+
+/* ───── 보드 ───── */
+function parseBoard(f){const b={};f.split(" ")[0].split("/").forEach((r,ri)=>{let c=0;for(const ch of r){if(/\d/.test(ch))c+=+ch;else{b["abcdefgh"[c]+(8-ri)]=ch;c++}}});return b}
+function xy(sq){const f=sq.charCodeAt(0)-97,r=+sq[1];return[flipped?7-f:f,flipped?r-1:8-r]}
+function renderBoard(fen,last,keys,bad){const b=parseBoard(fen);let h="";const capT=new Set(targets.filter(t=>b[t]));
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++){const rank=flipped?r+1:8-r,file=flipped?7-c:c;const sq="abcdefgh"[file]+rank;
+    const dark=(file+rank)%2===1;const cls="sq"+(dark?" d":"")+(last.includes(sq)?" last":"")+(sq===sel?" sel":"")+(keys.includes(sq)?" key"+(bad?" bad":""):"")+(hintSq.includes(sq)?" hint":"")+(drag&&drag.moved&&drag.from===sq?" drag":"");
+    h+='<div class="'+cls+'" data-sq="'+sq+'" role="gridcell" aria-label="'+sq+(b[sq]?" "+b[sq]:"")+'">';
+    if(b[sq])h+='<div class="pc" style="background-image:url(\''+PIECES[b[sq]]+'\')"></div>';
+    if(targets.includes(sq))h+='<i class="dot'+(capT.has(sq)?" cap":"")+'"></i>';
+    if(c===0)h+='<span class="cr r">'+rank+"</span>";if(r===7)h+='<span class="cr f">'+"abcdefgh"[file]+"</span>";h+="</div>"}
+  $("board").innerHTML=h;drawArrows();
+  if(anim&&!RM){const [fx,fy]=xy(anim[0]),[tx,ty]=xy(anim[1]);const pc=$("board").querySelector('[data-sq="'+anim[1]+'"] .pc');
+    if(pc){pc.style.transition="none";pc.style.transform="translate("+(fx-tx)*100+"%,"+(fy-ty)*100+"%)";pc.style.zIndex=4;void pc.offsetWidth;pc.style.transition="transform .18s ease-out";pc.style.transform=""}}
+  anim=null}
+function drawArrows(){let s="";arrowsX.forEach(a=>{const [x1,y1]=xy(a.from),[x2,y2]=xy(a.to);const ax=x1+.5,ay=y1+.5,bx=x2+.5,by=y2+.5;
+    const dx=bx-ax,dy=by-ay,len=Math.hypot(dx,dy),ux=dx/len,uy=dy/len;const hx=bx-ux*.42,hy=by-uy*.42,nx=-uy,ny=ux;
+    const sx=ax+ux*.25,sy=ay+uy*.25;
+    s+='<line x1="'+sx+'" y1="'+sy+'" x2="'+hx+'" y2="'+hy+'" stroke="'+a.c+'" stroke-width=".17" stroke-linecap="round" opacity=".82"/>';
+    s+='<polygon points="'+(bx-ux*.12)+","+(by-uy*.12)+" "+(hx+nx*.26)+","+(hy+ny*.26)+" "+(hx-nx*.26)+","+(hy-ny*.26)+'" fill="'+a.c+'" opacity=".82"/>'});
+  $("arrows").innerHTML=s}
+const CSS=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+/* ───── 보기 모드 ───── */
+function viewMoves(){const Ln=L();let h="";
+  Ln.steps.forEach((s,i)=>{const white=!s.l.includes("...");const mm=s.l.match(/^(\d+\.(?:\.\.)?)(.*)$/);
+    if(white||i===0)h+='<span class="no">'+mm[1]+"</span>";
+    h+='<button class="m'+(i<Ln.start?" pre":"")+(s.t==="b"?" b":"")+'" data-i="'+(i+1)+'">'+esc(mm[2])+"</button>"});
+  $("moves").innerHTML=h;$("moves").querySelectorAll(".m").forEach(b=>b.onclick=()=>{st=+b.dataset.i;draw()})}
+function draw(){if(mode!=="view")return;const Ln=L();const s=st>0?Ln.steps[st-1]:null;const nx=Ln.steps[st];
+  arrowsX=($("showNext").checked&&nx)?[{from:nx.u.slice(0,2),to:nx.u.slice(2,4),c:CSS("--arrow-next")}]:[];
+  const ev=s||START_EVAL;if($("showEng").checked&&ev.b)arrowsX.push({from:ev.b.slice(0,2),to:ev.b.slice(2,4),c:CSS("--arrow-eng")});
+  renderBoard(s?s.F:START_FEN,s?s.a:[],s?s.h:[],s&&s.t==="b");
+  $("cnt").textContent=st+" / "+Ln.steps.length;
+  $("lichess").href="https://lichess.org/analysis/standard/"+(s?s.F:START_FEN).replace(/ /g,"_");
+  if(!s)setNow("","시작 위치",'<p>▶ 또는 → 키로 수순을 넘겨 보세요. 파란 화살표가 다음 수예요. 회색 수는 앞 라인과 같은 공통 수순이에요.</p>');
+  else setNow(s.t,esc(s.l)+'<span class="verdict '+s.t+'">'+VERD[s.t]+"</span>",s.n?"<p>"+esc(s.n)+"</p>":'<p class="empty">자연스러운 진행입니다.</p>');
+  if(ev.e!=null){const fenNow=s?s.F:START_FEN;const [lab,cls]=s&&s.x!=null?classify(s.x):["",""];
+    $("now").insertAdjacentHTML("beforeend",'<div class="eng">'+(s&&s.x!=null?'<span class="verdict '+cls+'">엔진: '+lab+"</span> ":"")+"Stockfish 17 (깊이 17): "+(s?"이 수 후 ":"")+"<b>"+fmtW(ev.e)+"</b>"+(s&&s.x!=null&&s.x>20?" · 손실 "+(s.x/100).toFixed(1)+"폰":"")+(ev.b?" · 다음 최선 <b>"+esc(sanOf(fenNow,ev.b))+"</b>":"")+"</div>");
+    setEval(ev.e)}
+  const cur=$("moves").querySelector(".m.cur");if(cur)cur.classList.remove("cur");
+  const mb=$("moves").querySelector('.m[data-i="'+st+'"]');if(mb){mb.classList.add("cur");mb.scrollIntoView({block:"nearest"})}
+  cands(s?s.F:START_FEN,nx?nx.u:null);updateEco()}
+function cands(fen,nextU){const known=IDX[posKey(fen)]||{};const ent=Object.entries(known);let h="";
+  ent.sort((a,b)=>(b[0]===nextU)-(a[0]===nextU)||b[1].r.length-a[1].r.length);
+  h+='<div class="sub" style="margin-top:0">이 학습실의 라인</div>';
+  const book=ent.filter(x=>!x[1].m),mist=ent.filter(x=>x[1].m);
+  h+=book.length?book.map(([u,v])=>{const names=v.r.slice(0,4).map(r=>DATA[r[0]].name+" · "+DATA[r[0]].lines[r[1]].name).join("\n");
+    return'<button class="cand'+(u===nextU?" next":"")+'" data-u="'+u+'" title="'+esc(names)+'"><i class="k '+v.t+'"></i>'+esc(v.s)+"<small>"+(u===nextU?"이 라인":v.r.length+"개 라인")+"</small></button>"}).join(""):'<span class="m hid">자료에 이어지는 수가 없어요.</span>';
+  if(mist.length&&mode!=="drill"){h+='<div class="sub">흔한 실수 (누르면 왜 안 되는지 보여줘요)</div>';h+=mist.map(([u,v])=>'<button class="cand" data-nu="'+u+'" title="'+esc(v.n)+'"><i class="k b"></i>'+esc(v.s)+"<small>"+(v.x/100).toFixed(1)+"폰 손해</small></button>").join("")}
+  const kids=namedKids(fen,new Set(ent.map(x=>x[0]))).slice(0,12);
+  if(kids.length){h+='<div class="sub">이름 있는 다른 변화 (Lichess 데이터)</div>';
+    h+=kids.map(([u,san,i])=>{const e=ECOE[i];const nm=e[2]?e[2].split(", ").pop():(e[4]||e[1]);return'<button class="cand" data-nu="'+u+'" title="'+esc(e[0]+" "+e[1]+(e[2]?": "+e[2]:""))+'">'+esc(san)+"<small>"+esc(nm.length>26?nm.slice(0,25)+"…":nm)+"</small></button>"}).join("")}
+  $("cands").innerHTML=h;
+  $("cands").querySelectorAll(".cand[data-u]").forEach(b=>b.onclick=()=>{const u=b.dataset.u;if(mode==="view"&&u===nextU){go(st+1);return}
+    if(mode==="free"){userMove(u.slice(0,2),u.slice(2,4),true);return}
+    const v=known[u];const r=v.r.find(r=>r[0]===oi)||v.r[0];openOp(r[0],false,r[1],r[2]+1)});
+  $("cands").querySelectorAll(".cand[data-nu]").forEach(b=>b.onclick=()=>{const u=b.dataset.nu;if(mode==="view")setMode("free",true);userMove(u.slice(0,2),u.slice(2,4),true)})}
+function go(n){const t=Math.max(0,Math.min(L().steps.length,n));if(t===st+1)anim=L().steps[st].a.slice();st=t;draw()}
+
+/* ───── 수 두기: 드래그·클릭 ───── */
+function canPlay(){return mode!=="view"&&game&&!(mode==="drill"&&(drill.waiting||drill.finished||game.turn()!==drill.color))&&!(mode==="train"&&(!train||train.waiting||!train.cur||game.turn()!==train.cur.c.color))}
+function sqAt(x,y){const el=document.elementFromPoint(x,y);const c=el&&el.closest&&el.closest("#board .sq");return c?c.dataset.sq:null}
+$("board").addEventListener("pointerdown",e=>{if(!canPlay())return;const sq=sqAt(e.clientX,e.clientY);if(!sq)return;e.preventDefault();
+  if(sel&&targets.includes(sq)){const f=sel;sel=null;targets=[];userMove(f,sq,true);return}
+  const p=game.get(sq);
+  if(p&&p.color===game.turn()){sel=sq;targets=game.moves({square:sq,verbose:true}).map(m=>m.to);hintSq=[];drag={from:sq,x:e.clientX,y:e.clientY,moved:false,p:(p.color==="w"?p.type.toUpperCase():p.type)};
+    $("board").setPointerCapture&&$("board").setPointerCapture(e.pointerId)}
+  else{sel=null;targets=[]}
+  redrawPlay()});
+$("board").addEventListener("pointermove",e=>{if(!drag)return;if(!drag.moved&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<5)return;
+  const wrap=$("boardwrap").getBoundingClientRect(),size=$("board").getBoundingClientRect().width/8;
+  if(!drag.moved){drag.moved=true;const g=document.createElement("div");g.className="ghost";g.style.width=g.style.height=size+"px";g.style.backgroundImage="url('"+PIECES[drag.p]+"')";$("boardwrap").appendChild(g);drag.g=g;redrawPlay()}
+  drag.g.style.left=(e.clientX-wrap.left-size/2)+"px";drag.g.style.top=(e.clientY-wrap.top-size/2)+"px"});
+function endDrag(e){if(!drag)return;const d=drag;drag=null;if(d.g)d.g.remove();if(!d.moved)return;
+  const to=e?sqAt(e.clientX,e.clientY):null;
+  if(to&&targets.includes(to)){sel=null;targets=[];userMove(d.from,to,false)}else redrawPlay()}
+$("board").addEventListener("pointerup",endDrag);$("board").addEventListener("pointercancel",()=>endDrag(null));
+function redrawPlay(keys,bad){renderBoard(game.fen(),lastMv,keys||[],bad);updateEco()}
+function userMove(from,to,animate){const fenBefore=game.fen();const mv=game.move({from,to,promotion:"q"});if(!mv)return;
+  const uci=from+to+(mv.promotion||"");lastMv=[from,to];hintSq=[];arrowsX=[];if(animate)anim=[from,to];
+  if(mode==="drill")drillJudge(fenBefore,uci,mv);else if(mode==="train")trainJudge(fenBefore,uci,mv);else freeJudge(fenBefore,uci,mv)}
+function moveLabel(fenBefore,san){const p=fenBefore.split(" ");return p[5]+(p[1]==="w"?". ":"... ")+san}
+function knownHtml(k){if(!k)return"";if(k.m)return'<p><span class="verdict b">흔한 실수</span> '+esc(k.n)+'</p>'+(k.pv?'<div class="eng">반박 수순 (Stockfish 17): '+esc(k.pv)+"</div>":"");const r=k.r[0];const o=DATA[r[0]],ln=o.lines[r[1]];
+  return '<p><span class="verdict '+k.t+'">자료: '+VERD[k.t]+"</span> "+(k.n?esc(k.n):"")+'</p><div class="eng">출처: '+esc(o.name+" · "+ln.name)+(k.r.length>1?" 외 "+(k.r.length-1)+"곳":"")+"</div>"}
+function engineInto(res,fenBefore,uci,setCls,noArrow){if(!res||!$("engline"))return;const stm=fenBefore.split(" ")[1];const loss=Math.max(0,(res.bestScore??0)-(res.userScore??0));
+  const [lab,cls]=classify(loss);const isBest=res.best===uci;
+  $("engline").innerHTML=esc(Engine.name||"엔진")+": "+(isBest?"<b>최선수와 같음</b>":"최선 <b>"+esc(sanOf(fenBefore,res.best))+"</b>")+" · 이 수 후 <b>"+fmtScore(res.userScore,stm)+"</b>"+(isBest?"":" (최선 "+fmtScore(res.bestScore,stm)+", 손실 "+(loss/100).toFixed(1)+"폰)");
+  setEval(whiteCp(res.userScore,stm));
+  if(!isBest&&res.best&&!noArrow){arrowsX=[{from:res.best.slice(0,2),to:res.best.slice(2,4),c:CSS("--arrow-eng")}];drawArrows()}
+  const why=$("why");
+  if(why){const txt=isBest?"엔진도 이 수를 최선으로 봐요.":(loss<60?"엔진도 충분히 둘 만한 수로 봐요. 최선과의 차이가 작아요.":(res.userPv&&res.userPv.length>1?explainMove(fenBefore,res.userPv,loss):"엔진 기준 손해가 큰 수예요."));
+    why.innerHTML='<span class="verdict '+cls+'">엔진: '+lab+"</span> "+esc(txt)+(!isBest&&res.best&&!noArrow?' <span class="empty" style="font-size:13px">초록 화살표가 엔진 최선수예요.</span>':"")}
+  if(!isBest&&res.userPv&&res.userPv.length>1&&$("enginfo"))$("enginfo").innerHTML='<div class="eng">예상 수순: '+esc(pvSan(fenBefore,res.userPv,8))+'</div><div class="eng">최선 수순: '+esc(pvSan(fenBefore,res.bestPv||[res.best],6))+"</div>";
+  if(setCls)$("now").className="now "+cls}
+
+/* ───── 따라 두기 연습 ───── */
+function startDrill(color){const Ln=L();const last=Ln.steps.length-1;
+  let c=color;if(!c){if(Ln.kind==="b")c=(last%2===0)?"w":"b";else c=DATA[oi].side==="흑"?"b":"w"}
+  drill={color:c,ply:0,first:{},waiting:false,finished:false,wrong:false,hint:0};
+  game=new Chess();lastMv=[];sel=null;targets=[];arrowsX=[];flipped=c==="b";
+  let pre=0;if(SET.skip&&Ln.start>0){for(let i=0;i<Ln.start;i++){const u=Ln.steps[i].u;game.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||"q"})}pre=Ln.start;drill.ply=pre;drill.pre=pre;const u=Ln.steps[pre-1].u;lastMv=[u.slice(0,2),u.slice(2,4)]}
+  setNow("","따라 두기 · "+(c==="w"?"백":"흑"),"<p>"+(c==="w"?"백":"흑")+"을 맡아 이 라인을 직접 두어 보세요. 상대 수는 자동으로 둡니다. 막히면 H로 힌트를 보세요.</p>"+(pre?'<p class="empty">앞 라인과 같은 공통 수순 '+pre+"수는 자동으로 두었어요. (설정에서 끌 수 있어요)</p>":""));
+  drillMoves();redrawPlay();setTimeout(autoOpp,350)}
+function drillMoves(){const Ln=L();let h="";
+  Ln.steps.forEach((s,i)=>{const white=!s.l.includes("...");const mm=s.l.match(/^(\d+\.(?:\.\.)?)(.*)$/);
+    if(white||i===0)h+='<span class="no">'+mm[1]+"</span>";
+    const mine=(i%2===0?"w":"b")===drill.color;let cls="m",txt=mm[2];
+    if(i>=drill.ply){cls+=" hid";txt=mine?"?":"…"}else if(i<(drill.pre||0))cls+=" pre";else if(mine)cls+=drill.first[i]===false?" miss":" ok";else cls+=" pre";
+    h+='<span class="'+cls+'">'+esc(txt)+"</span>"});
+  $("moves").innerHTML=h;const n=Object.keys(drill.first).length,ok=Object.values(drill.first).filter(Boolean).length;
+  $("d-cnt").textContent="첫 시도 정답 "+ok+" / "+n}
+function autoOpp(){const Ln=L();if(!drill||mode!=="drill")return;
+  if(drill.ply>=Ln.steps.length){finishDrill();return}
+  if(game.turn()===drill.color){drillMoves();redrawPlay();return}
+  const s=Ln.steps[drill.ply];drill.waiting=true;const myDrill=drill;
+  setTimeout(()=>{if(mode!=="drill"||drill!==myDrill)return;const u=s.u;game.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||"q"});lastMv=[u.slice(0,2),u.slice(2,4)];anim=lastMv.slice();drill.ply++;drill.waiting=false;
+    if(!drill.wrong&&drill.ply>1)$("now").insertAdjacentHTML("beforeend",'<p class="empty">상대: '+esc(s.l)+(s.n?" — "+esc(s.n):"")+"</p>");
+    else setNow(s.t,"상대 수","<p>"+esc(s.l)+(s.n?" — "+esc(s.n):"")+"</p>");
+    drill.wrong=false;drill.hint=0;redrawPlay(s.h,s.t==="b");drillMoves();
+    if(drill.ply>=Ln.steps.length)finishDrill()},SET.speed)}
+function drillJudge(fenBefore,uci,mv){const Ln=L();const s=Ln.steps[drill.ply];
+  if(uci===s.u){if(!(drill.ply in drill.first))drill.first[drill.ply]=true;drill.ply++;drill.wrong=false;drill.hint=0;
+    setNow(s.t==="b"?"b":"g",esc(s.l)+'<span class="verdict g">정답</span>',s.n?"<p>"+esc(s.n)+"</p>":"");
+    redrawPlay(s.h,s.t==="b");drillMoves();if(drill.ply>=Ln.steps.length)finishDrill();else autoOpp();return}
+  drill.first[drill.ply]=false;drill.wrong=true;drill.waiting=true;
+  const k=(IDX[posKey(fenBefore)]||{})[uci];
+  setNow(k&&k.t==="g"?"w":"b",esc(moveLabel(fenBefore,mv.san))+'<span class="verdict w">이 라인의 수가 아니에요</span>',knownHtml(k)+'<p class="why" id="why">'+(Engine.ok?'<span class="empty">엔진이 이 수를 분석하는 중…</span>':"")+'</p><details class="more"><summary>엔진 분석 자세히</summary><div class="eng" id="engline">'+(Engine.ok?"분석 중…":"엔진을 불러오지 못했어요.")+'</div><div id="enginfo"></div></details>'+
+    '<div class="acts"><button class="btn pri" id="a-retry">다시 시도 <kbd>R</kbd></button><button class="btn" id="a-ans">정답 보기 <kbd>A</kbd></button>'+(k&&k.r.length&&(k.r[0][0]!==oi||k.r[0][1]!==li)?'<button class="btn" id="a-go">이 수의 라인으로</button>':"")+"</div>");
+  redrawPlay();drillMoves();
+  $("a-retry").onclick=retry;$("a-ans").onclick=()=>{Engine.cancel();game.undo();drill.waiting=false;showAnswer()};
+  if($("a-go"))$("a-go").onclick=()=>{const r=k.r[0];mode="view";openOp(r[0],false,r[1],r[2]+1)};
+  const tok=++evalTok;if(Engine.ok)Engine.evalMove(fenBefore,uci).then(res=>{if(tok===evalTok)engineInto(res,fenBefore,uci,false)})}
+function retry(){if(!drill||!drill.wrong)return;Engine.cancel();game.undo();const h=game.history({verbose:true});const l=h[h.length-1];lastMv=l?[l.from,l.to]:[];arrowsX=[];drill.waiting=false;drill.wrong=false;
+  setNow("","다시 시도","<p>다른 수를 찾아보세요. 막히면 H로 힌트를 보세요.</p>");redrawPlay()}
+function showAnswer(){const s=L().steps[drill.ply];drill.first[drill.ply]=false;hintSq=[];arrowsX=[];
+  game.move({from:s.u.slice(0,2),to:s.u.slice(2,4),promotion:s.u[4]||"q"});lastMv=[s.u.slice(0,2),s.u.slice(2,4)];anim=lastMv.slice();drill.ply++;drill.wrong=false;drill.hint=0;
+  setNow(s.t,esc(s.l)+'<span class="verdict n">정답 공개</span>',s.n?"<p>"+esc(s.n)+"</p>":"");redrawPlay(s.h,s.t==="b");drillMoves();
+  if(drill.ply>=L().steps.length)finishDrill();else autoOpp()}
+function finishDrill(){if(drill.finished)return;drill.finished=true;const n=Object.keys(drill.first).length,ok=Object.values(drill.first).filter(Boolean).length;drillMoves();
+  const kk=key(DATA[oi],li),ratio=n?ok/n:1,prev=stats[kk];
+  const iv=ratio===1?Math.min(60,Math.max(1,prev&&prev.iv?Math.round(prev.iv*2.5):1)):0;
+  stats[kk]={last:ratio,best:Math.max(ratio,prev?prev.best:0),n:(prev?prev.n:0)+1,iv,due:Date.now()+iv*DAY};put("chess-stats",stats);
+  if(ratio===1&&!done[kk]){done[kk]=1;put("chess-done",done);$("done").checked=true}
+  progress();tabs();list();
+  const box=$("now");box.className="now "+(ratio===1?"g":"w");
+  box.insertAdjacentHTML("beforeend",'<p><span class="verdict '+(ratio===1?"g":"w")+'">라인 완료</span> 첫 시도 정답 '+ok+" / "+n+(ratio===1?". 완벽해요. 학습 완료로 표시했고, "+iv+"일 뒤 복습 목록에 다시 올라와요.":". 틀린 수는 노란색으로 표시돼 있어요. 오늘 복습 목록에 남겨 둘게요.")+'</p><div class="acts"><button class="btn pri" id="a-again">다시 연습 <kbd>R</kbd></button><button class="btn" id="a-next">다음 라인 연습</button></div>');
+  $("a-again").onclick=()=>startDrill(drill.color);$("a-next").onclick=()=>$("nextline").click();
+  if(SET.auto){const myD=drill;setTimeout(()=>{if(mode==="drill"&&drill===myD)$("nextline").click()},1800)}}
+function hint(){if(!drill||drill.finished||drill.waiting||game.turn()!==drill.color)return;const s=L().steps[drill.ply];drill.first[drill.ply]=false;drill.hint++;
+  if(drill.hint===1){hintSq=[s.u.slice(0,2)];arrowsX=[]}else{hintSq=[];arrowsX=[{from:s.u.slice(0,2),to:s.u.slice(2,4),c:CSS("--arrow-hint")}]}
+  redrawPlay();drillMoves()}
+$("d-restart").onclick=()=>startDrill(drill.color);
+$("d-color").onclick=()=>startDrill(drill.color==="w"?"b":"w");
+$("d-hint").onclick=hint;
+$("d-show").onclick=()=>{if(!drill||drill.finished||drill.waiting||game.turn()!==drill.color)return;showAnswer()};
+
+/* ───── 자유 실험 ───── */
+function startFree(fen,prefix){freeStart=fen;freePrefix=prefix||[posKey(fen)];game=new Chess(fen);lastMv=[];sel=null;targets=[];arrowsX=[];
+  setNow("","자유 실험","<p>양쪽 수를 마음대로 두어 보세요. 한 수마다 자료에 있는 수인지, 엔진이 어떻게 보는지 알려드려요. 아래 후보 수를 눌러 자료의 수를 둘 수도 있어요.</p>");
+  freeMoves();redrawPlay();cands(game.fen(),null)}
+function freeMoves(){const hist=game.history();const p=freeStart.split(" ");let n=+p[5],w=p[1]==="w";let h="";
+  if(!hist.length)h='<span class="m hid">아직 없음</span>';
+  hist.forEach((s,i)=>{if(w||i===0)h+='<span class="no">'+n+(w?".":"...")+"</span>";h+='<span class="m">'+esc(s)+"</span>";if(!w)n++;w=!w});
+  $("moves").innerHTML=h;$("f-cnt").textContent=hist.length+"수"}
+function freeJudge(fenBefore,uci,mv){const k=(IDX[posKey(fenBefore)]||{})[uci];
+  setNow(k?k.t:"",esc(moveLabel(fenBefore,mv.san))+(game.in_checkmate()?'<span class="verdict g">체크메이트</span>':""),(k?knownHtml(k):'<p class="empty">이 자료에 없는 수예요. 엔진 평가를 참고하세요.</p>')+
+    (game.game_over()?"":'<p class="why" id="why">'+(Engine.ok?'<span class="empty">엔진이 이 수를 분석하는 중…</span>':"")+'</p><details class="more"><summary>엔진 분석 자세히</summary><div class="eng" id="engline">'+(Engine.ok?"분석 중…":"엔진을 불러오지 못했어요.")+'</div><div id="enginfo"></div></details>')+
+    (k&&k.r.length&&(k.r[0][0]!==oi||k.r[0][1]!==li)?'<div class="acts"><button class="btn" id="a-go">이 수의 라인으로</button></div>':""));
+  if($("a-go"))$("a-go").onclick=()=>{const r=k.r[0];mode="view";openOp(r[0],false,r[1],r[2]+1)};
+  redrawPlay();freeMoves();cands(game.fen(),null);
+  const tok=++evalTok;if(Engine.ok&&!game.game_over())Engine.evalMove(fenBefore,uci).then(res=>{if(tok===evalTok)engineInto(res,fenBefore,uci,!k)})}
+function undo(){Engine.cancel();if(game.undo()){const h=game.history({verbose:true});const l=h[h.length-1];lastMv=l?[l.from,l.to]:[];sel=null;targets=[];arrowsX=[];setNow("","무르기","<p>한 수 물렀어요.</p>");freeMoves();redrawPlay();cands(game.fen(),null)}}
+function engineBest(){if(!Engine.ok){setNow("","엔진","<p>엔진을 불러오지 못했어요.</p>");return}if(game.game_over())return;const fen=game.fen();
+  setNow("","엔진 추천","<p>분석 중…</p>");const tok=++evalTok;Engine.best(fen).then(r=>{if(!r||tok!==evalTok||game.fen()!==fen)return;
+    arrowsX=[{from:r.best.slice(0,2),to:r.best.slice(2,4),c:CSS("--arrow-eng")}];const k=(IDX[posKey(fen)]||{})[r.best];setEval(whiteCp(r.score,fen.split(" ")[1]));
+    setNow("w","엔진 추천: "+esc(sanOf(fen,r.best)),'<div class="eng">평가 <b>'+fmtScore(r.score,fen.split(" ")[1])+"</b> (백 기준, +는 백 유리). 초록 화살표대로 두려면 직접 옮기세요.</div>"+(k?knownHtml(k):""));redrawPlay()})}
+$("f-undo").onclick=undo;$("f-reset").onclick=()=>{Engine.cancel();$("evalbar").classList.add("off");startFree(freeStart,freePrefix)};
+function startFreeMoves(p){const c=new Chess();const ks=[posKey(c.fen())];let last=null;p.us.forEach(u=>{last=c.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||"q"});ks.push(posKey(c.fen()))});
+  startFree(c.fen(),ks);lastMv=last?[last.from,last.to]:[];
+  setNow("","사전: "+esc(p.title),'<p>이 위치까지 두어진 상태예요. 이어서 두면 한 수마다 자료·엔진 평가를 보여드려요. 아래 후보 수로 이어지는 변화도 탐색할 수 있어요.</p><div class="eng" id="engline">'+(Engine.ok?"엔진 분석 중…":"")+"</div>");
+  redrawPlay();const fen=game.fen(),tok=++evalTok;
+  if(Engine.ok&&!game.game_over())Engine.best(fen).then(r=>{if(!r||tok!==evalTok||game.fen()!==fen||!$("engline"))return;const stm=fen.split(" ")[1];
+    $("engline").innerHTML="엔진: 평가 <b>"+fmtScore(r.score,stm)+"</b> · 최선 <b>"+esc(sanOf(fen,r.best))+"</b>";setEval(whiteCp(r.score,stm));
+    arrowsX=[{from:r.best.slice(0,2),to:r.best.slice(2,4),c:CSS("--arrow-eng")}];drawArrows()})}
+$("f-flip").onclick=()=>{flipped=!flipped;redrawPlay()};$("f-best").onclick=engineBest;
+
+function setNow(cls,title,body){const n=$("now");n.className="now"+(cls?" "+cls:"");n.innerHTML='<div class="mv">'+title+"</div>"+body}
+
+/* ───── 무작위·복습 ───── */
+function reviewList(){const r=[],now=Date.now();DATA.forEach((o,i)=>o.lines.forEach((l,j)=>{const s=stats[key(o,j)];if(s&&(s.last<1||(s.due||0)<=now))r.push([i,j,(s.due||0)])}));return r.sort((a,b)=>a[2]-b[2])}
+function startPractice(pool,first){if(!pool.length)return false;const [i,j]=first?pool[0]:pool[Math.floor(Math.random()*pool.length)];mode="drill";openOp(i,false,j);drawer(false);return true}
+$("rand").onclick=()=>{const pool=[];visibleOps().forEach(i=>DATA[i].lines.forEach((l,j)=>pool.push([i,j])));startPractice(pool)};
+$("review").onclick=()=>{if(!startPractice(reviewList(),true))setNow("","오늘 복습","<p>지금 복습할 라인이 없어요. 따라 두기 연습을 하면 틀린 라인은 바로, 다 맞힌 라인은 1일·3일·8일… 간격으로 여기에 다시 올라와요.</p>")};
+
+/* ───── 레퍼토리와 간격 반복 훈련 ───── */
+let rep=store("chess-rep",{ops:{w:[],e4:[],d4:[]},lines:{}}),srs=store("chess-srs",{}),newDay=store("chess-newday",{d:"",n:0});
+let train=null,trainKeys=[];
+const SLOTS=[["w","백으로 둘 오프닝",o=>o.side==="백"],["e4","흑 · 1.e4를 상대로",o=>o.side==="흑"&&o.group.indexOf("1.e4")===0],["d4","흑 · 1.d4를 상대로",o=>o.side==="흑"&&o.group.indexOf("1.d4")===0]];
+const saveRep=()=>put("chess-rep",rep);
+function todayStr(){const d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()}
+function newLeft(){if(newDay.d!==todayStr())newDay={d:todayStr(),n:0};return Math.max(0,SET.newpd-newDay.n)}
+const DEF={};
+function defaults(o,c){const ck=o.id+c;if(DEF[ck])return DEF[ck];const inc=[],on={};
+  o.lines.forEach((l,j)=>{const us=l.steps.map(s=>s.u);
+    if(l.steps.some((s,p)=>(p%2===0?"w":"b")===c&&s.t==="b")){on[j]=false;return}
+    if(!inc.length){inc.push(us);on[j]=true;return}
+    let best=0;inc.forEach(v=>{let n=0;while(n<us.length&&n<v.length&&us[n]===v[n])n++;best=Math.max(best,n)});
+    const mover=best%2===0?"w":"b";on[j]=mover!==c;if(on[j])inc.push(us)});
+  return DEF[ck]=on}
+function lineOn(o,j,c){const k=key(o,j);return k in rep.lines?rep.lines[k]:defaults(o,c)[j]}
+function buildCards(){const cards={};let order=0;
+  SLOTS.forEach(([sk])=>(rep.ops[sk]||[]).forEach(id=>{const i=DATA.findIndex(o=>o.id===id);if(i<0)return;const o=DATA[i],c=sk==="w"?"w":"b";
+    o.lines.forEach((l,j)=>{if(!lineOn(o,j,c))return;l.steps.forEach((s0,p)=>{if((p%2===0?"w":"b")!==c)return;
+      const fen=p?l.steps[p-1].F:START_FEN;const cid=posKey(fen)+"|"+c;let cd=cards[cid];
+      if(!cd)cd=cards[cid]={id:cid,fen,color:c,exp:{},ref:[i,j,p],order:order++};cd.exp[s0.u]=1})})}));
+  return Object.values(cards).sort((a,b)=>a.order-b.order)}
+function repSummary(){const cards=buildCards(),now=Date.now();const fresh=cards.filter(c=>!srs[c.id]).length;
+  return{cards,total:cards.length,due:cards.filter(c=>srs[c.id]&&srs[c.id].due<=now).length,fresh,learned:cards.length-fresh,todayNew:Math.min(fresh,newLeft())}}
+function repBadge(){const s=repSummary();const n=s.due+s.todayNew;$("openrep").textContent="내 레퍼토리 훈련"+(s.total?(n?" ("+n+")":" ✓"):"")}
+function openRep(){closeDict();$("main").classList.add("repmode");renderRep();window.scrollTo(0,0);drawer(false)}
+function closeRep(){$("main").classList.remove("repmode")}
+function renderRep(){const s=repSummary();
+  $("repstats").innerHTML="<div><b>"+s.total+"</b><span>전체 카드 (내 차례 위치)</span></div><div><b>"+s.due+"</b><span>오늘 복습할 카드</span></div><div><b>"+s.todayNew+"</b><span>오늘 새로 익힐 카드</span></div><div><b>"+s.learned+"</b><span>익힌 카드</span></div>";
+  document.querySelectorAll("#s-newpd button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.v===SET.newpd));
+  $("slots").innerHTML=SLOTS.map(([sk,title,f])=>{const mine=rep.ops[sk]||[];const opts=DATA.filter(f).filter(o=>!mine.includes(o.id));
+    return'<div class="slot"><h3>'+title+'</h3><div class="row"><select id="sel-'+sk+'" aria-label="'+title+' 고르기">'+opts.map(o=>'<option value="'+o.id+'">'+esc(o.name)+"</option>").join("")+'</select><button class="btn" data-add="'+sk+'">추가</button></div>'+
+    (mine.length?mine.map(id=>{const o=DATA.find(x=>x.id===id);if(!o)return"";return'<div class="repop"><div class="t">'+esc(o.name)+'<button class="btn" style="height:28px;font-size:12px" data-del="'+sk+"|"+id+'">빼기</button></div>'+
+      '<p class="empty" style="margin:4px 0;font-size:12px">기본으로는 상대 대응을 모두 포함하고, 내 수가 갈라지는 대안 라인과 내가 실수하는 함정 라인은 뺐어요. 체크로 바꿀 수 있어요.</p>'+
+      o.lines.map((l,j)=>'<label><input type="checkbox" data-line="'+key(o,j)+'"'+(lineOn(o,j,sk==="w"?"w":"b")?" checked":"")+'><i class="k '+l.kind+'"></i>'+esc(l.name)+"</label>").join("")+"</div>"}).join(""):'<p class="empty" style="margin:0;font-size:13px">아직 고른 오프닝이 없어요.</p>')+"</div>"}).join("");
+  $("slots").querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>{const sk=b.dataset.add,v=$("sel-"+sk).value;rep.ops[sk]=rep.ops[sk]||[];if(v&&!rep.ops[sk].includes(v)){rep.ops[sk].push(v);saveRep();renderRep();repBadge()}});
+  $("slots").querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{const [sk,id]=b.dataset.del.split("|");rep.ops[sk]=rep.ops[sk].filter(x=>x!==id);saveRep();renderRep();repBadge()});
+  $("slots").querySelectorAll("[data-line]").forEach(c=>c.onchange=()=>{rep.lines[c.dataset.line]=c.checked;saveRep();renderRep();repBadge()})}
+function startTrain(){const s=repSummary();if(!s.total){openRep();$("repstats").insertAdjacentHTML("afterend",'<p class="why" style="margin:0;color:var(--warn)">먼저 아래에서 오프닝을 하나 이상 추가하세요.</p>');return}
+  const now=Date.now();const due=s.cards.filter(c=>srs[c.id]&&srs[c.id].due<=now).sort((a,b)=>srs[a.id].due-srs[b.id].due);
+  const fresh=s.cards.filter(c=>!srs[c.id]).slice(0,newLeft());
+  train={q:due.map(c=>({c,learn:false})).concat(fresh.map(c=>({c,learn:true}))),ok:0,bad:0,learned:0,cur:null,waiting:false};
+  closeRep();if(!train.q.length){train=null;setNow("g","오늘 훈련 끝","<p>지금 복습할 카드가 없어요. 내일 다시 오거나, 레퍼토리에서 하루 새 카드 수를 늘려 보세요.</p>");return}
+  nextCard()}
+function nextCard(){if(!train)return;Engine.cancel();if(!train.q.length){endTrain();return}train.cur=train.q.shift();train.waiting=false;train.hint=0;const [i,j]=train.cur.c.ref;
+  mode="train";if(i!==oi||j!==li)openOp(i,true,j);else setMode("train");window.scrollTo({top:0})}
+function showCard(){const it=train.cur,c=it.c;game=new Chess(c.fen);flipped=c.color==="b";sel=null;targets=[];hintSq=[];arrowsX=[];
+  const [i,j,p]=c.ref;const Ln=DATA[i].lines[j];lastMv=p?Ln.steps[p-1].a.slice():[];
+  trainKeys=[posKey(START_FEN)];let h="";for(let x=0;x<p;x++){const s=Ln.steps[x];trainKeys.push(posKey(s.F));const mm=s.l.match(/^(\d+\.(?:\.\.)?)(.*)$/);if(!s.l.includes("...")||x===0)h+='<span class="no">'+mm[1]+"</span>";h+='<span class="m pre">'+esc(mm[2])+"</span>"}
+  $("moves").innerHTML=h+'<span class="m hid">?</span>';
+  const expU=Object.keys(c.exp);const ctx=esc(DATA[i].name+" · "+Ln.name)+" · "+(Math.floor(p/2)+1)+"수째, "+(c.color==="w"?"백":"흑")+" 차례";
+  if(it.learn){const u=expU[0];arrowsX=[{from:u.slice(0,2),to:u.slice(2,4),c:CSS("--arrow-next")}];const s=Ln.steps[p];
+    setNow("w","새 수 익히기",'<p class="empty">'+ctx+"</p><p>파란 화살표 수 <b>"+esc(s.l)+"</b>를 직접 두어 익히세요.</p>"+(s.n?"<p>"+esc(s.n)+"</p>":"")+(expU.length>1?'<p class="empty">이 위치에는 레퍼토리에 다른 수도 있어요: '+expU.slice(1).map(x=>esc(sanOf(c.fen,x))).join(", ")+"</p>":""))}
+  else setNow("","레퍼토리 복습",'<p class="empty">'+ctx+"</p><p>레퍼토리에서 두기로 한 수를 두세요. 막히면 H(힌트)나 A(정답).</p>");
+  $("t-cnt").textContent="남은 카드 "+(train.q.length+1)+" · 정답 "+train.ok+" · 오답 "+train.bad;$("evalbar").classList.add("off");
+  redrawPlay()}
+function schedule(c,good){const now=Date.now();const r=srs[c.id]||{iv:0,ease:2.5,n:0,lapse:0};
+  if(good){r.iv=r.iv<1?1:Math.min(180,Math.round(r.iv*r.ease));r.ease=Math.min(3,r.ease+.05);r.n++;r.due=now+r.iv*DAY}
+  else{r.iv=0;r.ease=Math.max(1.3,r.ease-.2);r.lapse++;r.due=now+6e5}
+  srs[c.id]=r;put("chess-srs",srs);repBadge();return r}
+function trainJudge(fenBefore,uci,mv){const it=train.cur,c=it.c;const ok=!!c.exp[uci];
+  if(it.learn){if(!ok){game.undo();setNow("w","새 수 익히기","<p>파란 화살표가 가리키는 수를 두세요.</p>");redrawPlay();return}
+    srs[c.id]={iv:0,ease:2.5,n:0,lapse:0,due:Date.now()+6e5};put("chess-srs",srs);newLeft();newDay.n++;put("chess-newday",newDay);train.learned++;train.q.push({c,learn:false});train.waiting=true;
+    setNow("g",esc(moveLabel(fenBefore,mv.san))+'<span class="verdict g">익힘</span>',"<p>좋아요. 이 카드는 이번 훈련이 끝나기 전에 한 번 더 물어볼게요.</p>");redrawPlay();repBadge();
+    setTimeout(()=>{if(train&&train.cur===it)nextCard()},SET.speed*2+400);return}
+  const k=(IDX[posKey(fenBefore)]||{})[uci];
+  if(ok){const r=schedule(c,true);train.ok++;train.waiting=true;
+    setNow("g",esc(moveLabel(fenBefore,mv.san))+'<span class="verdict g">정답</span>',(k&&k.n?"<p>"+esc(k.n)+"</p>":"")+'<p class="empty">다음 복습: '+r.iv+"일 뒤</p>");redrawPlay();
+    setTimeout(()=>{if(train&&train.cur===it)nextCard()},SET.speed*2+600);return}
+  trainMiss(fenBefore,uci,mv,k)}
+function trainMiss(fenBefore,uci,mv,k){const it=train.cur,c=it.c;schedule(c,false);train.bad++;train.q.push({c,learn:false});train.waiting=true;
+  const [i,j,p]=c.ref;const s=DATA[i].lines[j].steps[p];const expU=Object.keys(c.exp);
+  arrowsX=expU.map(u=>({from:u.slice(0,2),to:u.slice(2,4),c:CSS("--arrow-next")}));
+  setNow("b",(mv?esc(moveLabel(fenBefore,mv.san))+'<span class="verdict b">레퍼토리 수가 아니에요</span>':"정답 확인"),'<p>정답: <b>'+expU.map(u=>esc(sanOf(c.fen,u))).join(", ")+"</b> (파란 화살표). "+esc(s.n||"")+"</p>"+(mv?knownHtml(k)+'<p class="why" id="why"></p><details class="more"><summary>엔진 분석 자세히</summary><div class="eng" id="engline">분석 중…</div><div id="enginfo"></div></details>':"")+
+    '<div class="acts"><button class="btn pri" id="a-nextcard">다음 카드 <kbd>N</kbd></button></div><p class="empty">이 카드는 이번 훈련 안에서 다시 나와요.</p>');
+  redrawPlay();$("a-nextcard").onclick=nextCard;
+  if(mv){const tok=++evalTok;if(Engine.ok)Engine.evalMove(fenBefore,uci).then(res=>{if(tok===evalTok)engineInto(res,fenBefore,uci,false,true)})}}
+function endTrain(){const t0=train;train=null;const s=repSummary();setMode("view",true);
+  setNow("g","오늘 훈련 끝",'<p>정답 '+t0.ok+" · 오답 "+t0.bad+" · 새로 익힌 수 "+t0.learned+"</p><p class=\"empty\">익힌 카드 "+s.learned+" / "+s.total+". 맞힌 카드는 간격이 늘어나며 다시 나와요.</p>"+'<div class="acts"><button class="btn" id="a-rep">레퍼토리 보기</button></div>');$("a-rep").onclick=openRep}
+$("t-hint").onclick=()=>{if(!train||!train.cur||train.waiting)return;const u=Object.keys(train.cur.c.exp)[0];hintSq=[u.slice(0,2)];redrawPlay()};
+$("t-show").onclick=()=>{if(!train||!train.cur||train.waiting||train.cur.learn)return;trainMiss(train.cur.c.fen,null,null,null)};
+$("t-next").onclick=()=>{if(train)nextCard()};$("t-stop").onclick=()=>{if(train){train.q=[];endTrain()}};
+$("openrep").onclick=openRep;$("closerep").onclick=closeRep;$("trainstart").onclick=startTrain;
+document.querySelectorAll("#s-newpd button").forEach(b=>b.onclick=()=>{SET.newpd=+b.dataset.v;saveSet();renderRep();repBadge()});
+
+/* ───── 오프닝 사전 ───── */
+const LETTERS=[["","전체"],["A","A 기타 첫 수·잉글리시"],["B","B 1.e4 반개방"],["C","C 1.e4 e5·프렌치"],["D","D 1.d4 d5"],["E","E 인디언 계열"]];
+function sanLine(ucis){const c=new Chess();return ucis.split(" ").map((u,i)=>{const m=c.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||"q"});return(i%2===0?(i/2+1)+".":"")+(m?m.san:u)}).join(" ")}
+function covered(ucis){const c=new Chess();for(const u of ucis.split(" ")){const k=posKey(c.fen());if(!(IDX[k]&&IDX[k][u]))return false;c.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||"q"})}return true}
+function dictMatches(){const q=$("dq").value.trim().toLowerCase();const out=[];ECOE.forEach((e,i)=>{if(dLetter&&e[0][0]!==dLetter)return;if(q&&!(e[0]+" "+e[1]+" "+e[2]+" "+e[4]).toLowerCase().includes(q))return;out.push(i)});return out}
+function renderDict(){const ms=dictMatches();$("dcount").textContent=ms.length.toLocaleString()+"개 변화"+(ms.length>dShown?" · "+dShown+"개 표시 중":"");
+  $("dlist").innerHTML=ms.slice(0,dShown).map(i=>{const e=ECOE[i];const nm=(e[4]||e[1])+(e[2]?": "+e[2]:"");
+    return'<button class="drow" data-i="'+i+'" title="'+esc(e[1]+(e[2]?": "+e[2]:""))+'"><span class="c">'+e[0]+'</span><span class="n">'+esc(nm)+"<small>"+esc(sanLine(e[3]))+'</small></span><span class="tagx">'+(covered(e[3])?'<span class="verdict g">해설 있음</span>':"")+"</span></button>"}).join("")+
+    (ms.length>dShown?'<div class="dmore"><button class="btn" id="dmore">150개 더 보기</button></div>':"")+(ms.length?"":'<div class="dmore">찾는 변화가 없어요. 영어 이름(예: Najdorf)이나 ECO 코드(예: B90)로도 찾아보세요.</div>');
+  $("dlist").querySelectorAll(".drow").forEach(b=>b.onclick=()=>dictOpen(+b.dataset.i));if($("dmore"))$("dmore").onclick=()=>{dShown+=150;renderDict()}}
+function openDict(){closeRep();$("main").classList.add("dictmode");$("dletters").innerHTML=LETTERS.map(([k,v])=>'<button class="chip" data-l="'+k+'" aria-pressed="'+(k===dLetter)+'">'+v+"</button>").join("");
+  $("dletters").querySelectorAll(".chip").forEach(c=>c.onclick=()=>{dLetter=c.dataset.l;dShown=150;openDict()});renderDict();window.scrollTo(0,0)}
+function closeDict(){$("main").classList.remove("dictmode")}
+function dictOpen(i){const e=ECOE[i];const us=e[3].split(" ");let best=[0,0,-1];
+  DATA.forEach((o,a)=>o.lines.forEach((l,b)=>{let n=0;while(n<us.length&&n<l.steps.length&&l.steps[n].u===us[n])n++;if(n>best[2])best=[a,b,n]}));
+  closeDict();pendingFree={us,title:e[0]+" "+(e[4]||e[1])+(e[2]?": "+e[2]:"")};mode="free";openOp(best[0],false,best[1]);window.scrollTo(0,0)}
+$("opendict").onclick=()=>{openDict();drawer(false)};$("closedict").onclick=closeDict;
+$("dq").oninput=()=>{dShown=150;renderDict()};
+
+/* ───── 기타 ───── */
+function nextTarget(){const o=DATA[oi];if(li+1<o.lines.length)return[oi,li+1,o.lines[li+1].name];if(oi+1<DATA.length)return[oi+1,0,""];return null}
+function nextBtn(){const nl=nextTarget();$("nextline").textContent=nl?"다음: "+(nl[0]===oi?nl[2]:DATA[nl[0]].name)+" →":"마지막 라인"}
+function drawer(open){$("aside").classList.toggle("open",open);$("scrim").classList.toggle("open",open)}
+$("menu").onclick=()=>drawer(true);$("scrim").onclick=()=>drawer(false);
+$("first").onclick=()=>go(L().start&&st>L().start?L().start:0);
+$("prev").onclick=()=>go(st-1);$("next").onclick=()=>go(st+1);$("last").onclick=()=>go(1e9);
+$("flip").onclick=()=>{flipped=!flipped;draw()};
+$("showNext").onchange=e=>{SET.showNext=e.target.checked;saveSet();draw()};$("showEng").onchange=e=>{SET.showEng=e.target.checked;saveSet();draw()};
+$("star").onclick=()=>{const k=key(DATA[oi],li);if(stars[k])delete stars[k];else stars[k]=1;put("chess-stars",stars);tabs();list()};
+$("linesel").onchange=e=>openLine(+e.target.value);
+$("done").onchange=e=>{const k=key(DATA[oi],li);if(e.target.checked)done[k]=1;else delete done[k];put("chess-done",done);progress();tabs();list()};
+$("nextline").onclick=()=>{const n=nextTarget();if(!n)return;if(n[0]!==oi)openOp(n[0]);else openLine(n[1])};
+$("q").oninput=e=>{query=e.target.value;list()};
+document.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{filt=c.dataset.f;document.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed",x===c));list()});
+document.querySelectorAll("#modes button").forEach(b=>b.onclick=()=>setMode(b.dataset.m,true));
+function setSize(px){document.documentElement.style.setProperty("--bw",px+"px");document.querySelectorAll("#sizes button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.s==px));put("chess-size",px)}
+document.querySelectorAll("#sizes button").forEach(b=>b.onclick=()=>setSize(+b.dataset.s));
+$("about").addEventListener("toggle",()=>put("chess-about",$("about").open));
+document.addEventListener("keydown",e=>{if(e.target.tagName==="INPUT"||e.target.tagName==="SELECT"||e.target.tagName==="TEXTAREA"||$("main").classList.contains("dictmode")||$("main").classList.contains("repmode")||e.metaKey||e.ctrlKey||e.altKey)return;const k=e.key;
+  if(k==="s"||k==="S"){$("star").click();return}
+  if(mode==="view"){if(k==="ArrowRight"||k===" "){go(st+1);e.preventDefault()}else if(k==="ArrowLeft"){go(st-1);e.preventDefault()}else if(k==="Home")go(0);else if(k==="End")go(1e9);else if(k==="f"||k==="F")$("flip").click()}
+  else if(mode==="drill"){if(k==="h"||k==="H")hint();else if(k==="a"||k==="A")$("d-show").click();else if(k==="r"||k==="R"){if(drill.wrong)retry();else startDrill(drill.color)}}
+  else if(mode==="free"){if(k==="ArrowLeft"||k==="Backspace"){undo();e.preventDefault()}else if(k==="e"||k==="E")engineBest()}
+  else if(mode==="train"){if(k==="h"||k==="H")$("t-hint").click();else if(k==="a"||k==="A")$("t-show").click();else if(k==="n"||k==="N")$("t-next").click()}});
+function fromHash(){const id=location.hash.slice(1);return DATA.findIndex(o=>o.id===id)}
+window.addEventListener("hashchange",()=>{const i=fromHash();if(i>=0&&i!==oi)openOp(i,true)});
+$("stat").textContent=DATA.length+"개 오프닝 · "+DATA.reduce((a,o)=>a+o.lines.length,0)+"개 라인 · "+DATA.reduce((a,o)=>a+o.lines.filter(l=>l.kind==="b").length,0)+"개 함정·실수";
+function applySet(){document.documentElement.setAttribute("data-board",SET.theme);
+  [["s-theme","theme"],["s-eng","eng"],["s-speed","speed"]].forEach(([id,k])=>document.querySelectorAll("#"+id+" button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v)===String(SET[k]))));
+  $("s-skip").checked=SET.skip;$("s-auto").checked=SET.auto;$("showNext").checked=SET.showNext;$("showEng").checked=SET.showEng}
+[["s-theme","theme",String],["s-eng","eng",Number],["s-speed","speed",Number]].forEach(([id,k,f])=>document.querySelectorAll("#"+id+" button").forEach(b=>b.onclick=()=>{SET[k]=f(b.dataset.v);saveSet();applySet();if(mode==="view")draw();else if(game)redrawPlay()}));
+$("s-skip").onchange=e=>{SET.skip=e.target.checked;saveSet()};$("s-auto").onchange=e=>{SET.auto=e.target.checked;saveSet()};
+function toggleSet(open){$("settings").classList.toggle("hide",!open);$("setbtn").setAttribute("aria-expanded",open)}
+$("setbtn").onclick=()=>toggleSet($("settings").classList.contains("hide"));$("s-close").onclick=()=>toggleSet(false);
+$("s-copy").onclick=()=>{const data=JSON.stringify({v:2,done,stats,stars,rep,srs});try{navigator.clipboard.writeText(data).then(()=>{$("s-msg").textContent="기록을 클립보드에 복사했어요. 다른 브라우저의 설정에서 붙여넣고 적용하세요."},()=>{$("s-text").value=data;$("s-msg").textContent="클립보드 복사가 막혀 있어요. 아래 칸의 내용을 직접 복사하세요."})}catch(e){$("s-text").value=data;$("s-msg").textContent="아래 칸의 내용을 직접 복사하세요."}};
+$("s-load").onclick=()=>{try{const d=JSON.parse($("s-text").value);if(!d||typeof d!=="object"||!d.done)throw 0;done=d.done||{};stats=d.stats||{};stars=d.stars||{};if(d.rep)rep=d.rep;if(d.srs)srs=d.srs;put("chess-done",done);put("chess-stats",stats);put("chess-stars",stars);saveRep();put("chess-srs",srs);progress();list();tabs();$("s-msg").textContent="기록을 적용했어요."}catch(e){$("s-msg").textContent="기록 형식이 맞지 않아요. '기록 복사'로 만든 내용을 그대로 붙여넣으세요."}};
+applySet();
+function showIntro(v){$("intro").classList.toggle("hide",!v)}
+$("intro-rep").onclick=()=>{put("chess-intro",true);showIntro(false);openRep()};$("intro-close").onclick=()=>{put("chess-intro",true);showIntro(false)};
+$("s-intro").onclick=()=>{toggleSet(false);closeRep();closeDict();showIntro(true);window.scrollTo(0,0)};
+if(!store("chess-intro",false))showIntro(true);
+setSize(store("chess-size",460));if(store("chess-about",false)===true)$("about").open=true;
+progress();const h0=fromHash();
+if(h0>=0)openOp(h0,true);else{const last=store("chess-last",null);const li0=last?DATA.findIndex(o=>o.id===last.id):-1;
+  if(li0>=0){mode=["view","drill","free"].includes(last.mode)?last.mode:"view";document.querySelectorAll("#modes button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===mode));openOp(li0,false,Math.min(last.li||0,DATA[li0].lines.length-1))}else openOp(0,true)}
+</script>
+</body>
+</html>
