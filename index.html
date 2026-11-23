@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet"></noscript>
-<meta name="description" content="50개 체스 오프닝, 323개 라인을 수마다 해설과 엔진 평가로 배우는 한국어 오프닝 학습 앱. 따라 두기·분기 연습·실수 응징·간격 반복 복습을 지원해요.">
+<meta name="description" content="51개 체스 오프닝, 389개 라인을 수마다 해설과 엔진 평가로 배우는 한국어 오프닝 학습 앱. 따라 두기·분기 연습·실수 응징·간격 반복 복습을 지원해요.">
 <style>
 /* 레이아웃: 왼쪽 목록(모바일은 서랍) · 본문 = 개요(접힘) → 라인 탭(종류별) → 도구막대 → 보드|패널 */
 :root{
@@ -345,6 +345,9 @@ footer{font-size:12px;color:var(--muted);padding:0 32px 24px;max-width:120ch}
   .optsd .opts{margin-top:6px}
   .lpop{position:fixed;inset:0;z-index:70}
   .slot .lpop,.slot:last-child .lpop{inset:0;width:auto;max-width:none}
+  .upd{padding:12px;width:calc(100vw - 24px)}
+  .upd span{flex-basis:100%;text-align:center;margin-bottom:2px}
+  .upd .btn{flex:1;max-width:160px}
   .lscrim{position:absolute;background:rgba(0,0,0,.35)}
   .lbody{position:absolute;left:0;right:0;bottom:0;max-height:80vh;max-height:80dvh;border:0;border-radius:16px 16px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.18)}
   .ltop b{flex:1}
@@ -355,6 +358,11 @@ footer{font-size:12px;color:var(--muted);padding:0 32px 24px;max-width:120ch}
   .lsel .nm{white-space:normal;word-break:keep-all;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.35}
   .lhit{min-height:40px}
 }
+.upd{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;background:var(--ink);color:var(--surface);border-radius:12px;padding:10px 12px 10px 16px;box-shadow:0 8px 24px rgba(0,0,0,.28);font-size:14px;width:max-content;max-width:calc(100vw - 24px)}
+.upd[hidden]{display:none}
+.upd span{word-break:keep-all}
+.upd small{opacity:.75;margin-left:4px}
+.upd .btn{height:34px}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2C5A86">
@@ -534,10 +542,11 @@ footer{font-size:12px;color:var(--muted);padding:0 32px 24px;max-width:120ch}
   </main>
 </div>
 <footer>조작: 기물을 끌어서 놓거나, 클릭한 뒤 갈 칸을 클릭. 단축키: 보기 ← → Space Home End F · 연습 H(힌트) A(정답) R(다시) N(실수 응징: 다음 문제) · 자유 ←(무르기) E(엔진 추천) · S(즐겨찾기). 마지막으로 보던 라인과 모드는 다음에 열 때 이어서 보여드려요. 모든 수순은 체스 규칙 엔진으로 합법성을 검증했어요. 연습·자유 실험의 실시간 평가는 브라우저에서 수마다 0.6~2.5초(설정의 분석 시간) 도는 <span id="engname">엔진 준비 중</span> 분석이라 갬빗처럼 장기 보상이 있는 수를 실제보다 나쁘게 볼 수 있어요. 수순 보기의 평가는 미리 계산한 Stockfish 19 결과예요(깊이 17, 자료 판정과 어긋난 곳은 깊이 24로 재확인). 자료에 있는 수는 자료 평가를 먼저 참고하세요. 학습 기록은 이 브라우저에만 저장돼요. 기물 그림: Colin M.L. Burnett (CC BY-SA 3.0). 엔진: Stockfish (GPL). 엔진 파일은 처음 한 번만 받고 이후엔 브라우저 캐시를 써요.</footer>
+<div class="upd" id="upd" role="status" aria-live="polite" hidden><span>새 버전이 준비됐어요<small>학습 기록은 그대로예요</small></span><button class="btn pri" id="upd-go">지금 적용</button><button class="btn" id="upd-later">나중에</button></div>
 <script src="chess.js"></script>
 <script src="data.js"></script>
 <script src="eco.js"></script>
-<script>window.ALT_SRC="alt.js";if("serviceWorker"in navigator&&/^https?:/.test(location.protocol)&&!/claude\.ai|claudeusercontent/.test(location.hostname)){addEventListener("load",()=>{setTimeout(()=>{try{navigator.serviceWorker.register("sw.js").catch(()=>{})}catch(e){}},1500)})}</script>
+<script>window.ALT_SRC="alt.js";if("serviceWorker"in navigator&&/^https?:/.test(location.protocol)&&!/claude\.ai|claudeusercontent/.test(location.hostname)){/* 이미 서비스 워커가 있던 상태에서 새 버전이 넘겨받으면(=업데이트) 알림을 띄운다. 처음 설치 때는 띄우지 않는다 */const had=!!navigator.serviceWorker.controller;let shown=false;navigator.serviceWorker.addEventListener("controllerchange",()=>{if(had&&!shown){shown=true;window.onSWUpdate&&window.onSWUpdate()}});addEventListener("load",()=>{setTimeout(()=>{try{navigator.serviceWorker.register("sw.js").then(reg=>{const chk=()=>{reg.update().catch(()=>{})};document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")chk()});setInterval(chk,1800000)}).catch(()=>{})}catch(e){}},1500)})}</script>
 
 <script>
 const KIND={g:"정상",n:"변화",b:"함정·실수"};
@@ -642,9 +651,14 @@ function progress(){let t=0,d=0;DATA.forEach(o=>o.lines.forEach((l,i)=>{t++;if(d
   if(typeof repBadge==="function")repBadge();
   $("progtxt").textContent="완료 "+d+" / "+t;$("progbar").style.width=(t?d/t*100:0)+"%";
   const rv=reviewList().length;$("review").textContent="오늘 복습"+(rv?" ("+rv+")":"")}
-function visibleOps(){const q=query.trim().toLowerCase();return DATA.map((o,i)=>i).filter(i=>{const o=DATA[i];
+/* 수순 검색: '1.e4 c5'처럼 수 번호를 붙여 써도 찾는다. '1.'로 시작하면 첫 수부터 그 수순인 라인만 찾는다 */
+function qAlt(q){if(!/\d+\.(\.\.)?\s*[a-hkqrbno]/i.test(q))return null;const s=q.replace(/\d+\.(\.\.)?\s*/g,"").replace(/[?!+#]/g,"").replace(/\s+/g," ").trim();return s?{s,a:/^1\.(?!\.)/.test(q)}:null}
+const LMOV=[];function lineMoves(i){return LMOV[i]||(LMOV[i]=DATA[i].lines.map(l=>l.steps.map(st=>st.l.replace(/^\d+\.(\.\.)?/,"").replace(/[?!+#]/g,"")).join(" ").toLowerCase()))}
+function opHit(i,q,qa){if(!qa)return SEARCH[i].includes(q);return qa.a?lineMoves(i).some(m=>(m+" ").startsWith(qa.s+" ")):SEARCH[i].includes(q)||SEARCH[i].includes(qa.s)}
+function lineHit(i,j,q,qa){if(!qa)return lineSearch(i)[j].includes(q);const m=lineMoves(i)[j];return qa.a?(m+" ").startsWith(qa.s+" "):lineSearch(i)[j].includes(q)||m.includes(qa.s)}
+function visibleOps(){const q=query.trim().toLowerCase(),qa=qAlt(q);return DATA.map((o,i)=>i).filter(i=>{const o=DATA[i];
   if(filt==="star"){if(!o.lines.some((l,j)=>stars[key(o,j)]))return false}
-  else if(filt!=="all"&&o.side!==filt&&o.side!=="공통")return false;return !q||SEARCH[i].includes(q)})}
+  else if(filt!=="all"&&o.side!==filt&&o.side!=="공통")return false;return !q||opHit(i,q,qa)})}
 function list(){const groups={};visibleOps().forEach(i=>{const g=DATA[i].group;(groups[g]=groups[g]||[]).push(i)});
   let h="";for(const g in groups){let gt=0,gd=0;groups[g].forEach(i=>DATA[i].lines.forEach((l,j)=>{gt++;if(done[key(DATA[i],j)])gd++}));
     h+='<div class="grp"><span>'+g+"</span><span>"+gd+"/"+gt+"</span></div>";
@@ -653,9 +667,9 @@ function list(){const groups={};visibleOps().forEach(i=>{const g=DATA[i].group;(
   $("list").innerHTML=h||(filt==="star"?'<div class="grp">아직 즐겨찾기한 라인이 없어요. 라인 아래 ☆ 버튼으로 추가하세요.</div>':'<div class="grp">검색 결과가 없어요. 다른 이름이나 수순으로 찾아보세요.</div>');
   $("list").querySelectorAll(".op").forEach(b=>b.onclick=()=>{openOp(+b.dataset.i);drawer(false)});
   /* 검색어가 있으면 오프닝 아래에 맞는 라인을 바로 보여 준다 */
-  const q=query.trim().toLowerCase();if(!q)return;
+  const q=query.trim().toLowerCase(),qa=qAlt(q);if(!q)return;
   $("list").querySelectorAll(".op").forEach(b=>{const i=+b.dataset.i,o=DATA[i],ls=lineSearch(i);
-    const hits=lineSeq(o).filter(j=>ls[j].includes(q));if(!hits.length||hits.length===o.lines.length)return;
+    const hits=lineSeq(o).filter(j=>lineHit(i,j,q,qa));if(!hits.length||hits.length===o.lines.length)return;
     const w=document.createElement("div");w.className="lhits";
     w.innerHTML=hits.slice(0,8).map(j=>'<button class="lhit" data-j="'+j+'"><i class="k '+o.lines[j].kind+'"></i><span>'+esc(o.lines[j].name)+"</span>"+(done[key(o,j)]?'<span class="done">✓</span>':"")+"</button>").join("")+(hits.length>8?'<div class="lmore">외 '+(hits.length-8)+"개 — 오프닝을 열어 목록에서 보세요</div>":"");
     b.after(w);w.querySelectorAll(".lhit").forEach(h=>h.onclick=()=>{openOp(i,false,+h.dataset.j);drawer(false);$("board").scrollIntoView({block:"nearest"})})})}
@@ -1209,6 +1223,7 @@ $("prev").onclick=()=>go(st-1);$("next").onclick=()=>go(st+1);$("last").onclick=
 $("flip").onclick=()=>{flipped=!flipped;draw()};
 $("showNext").onchange=e=>{SET.showNext=e.target.checked;saveSet();draw()};$("showEng").onchange=e=>{SET.showEng=e.target.checked;saveSet();draw()};
 $("star").onclick=()=>{const k=key(DATA[oi],li);if(stars[k])delete stars[k];else stars[k]=1;put("chess-stars",stars);tabs();list()};
+window.onSWUpdate=()=>{const u=$("upd");if(!u.hidden)return;u.hidden=false;$("upd-go").onclick=()=>location.reload();$("upd-later").onclick=()=>{u.hidden=true}};
 $("lsel").onclick=()=>{$("lpop").hidden?openPick():closePick()};$("lclose").onclick=()=>closePick();$("lscrim").onclick=()=>closePick(false);
 $("lprev").onclick=()=>stepLine(-1);$("lnext").onclick=()=>stepLine(1);
 (()=>{const mq=matchMedia("(max-width:900px)");const f=()=>{$("optsd").open=!mq.matches};f();mq.addEventListener?mq.addEventListener("change",f):mq.addListener(f)})();
@@ -1233,7 +1248,7 @@ document.addEventListener("keydown",e=>{if(e.target.tagName==="INPUT"||e.target.
 if(window.ALT_SRC&&!window.ALT_READY)setTimeout(()=>{const sc=document.createElement("script");sc.src=window.ALT_SRC;document.body.appendChild(sc)},0);
 window.onAltLoaded=function(){try{if(!DATA[oi])return;if(mode==="view")draw();else if(mode==="free"&&game)cands(game.fen(),null)}catch(e){}};
 function fromHash(){const id=location.hash.slice(1);return DATA.findIndex(o=>o.id===id)}
-window.addEventListener("hashchange",()=>{const i=fromHash();if(i>=0&&i!==oi)openOp(i,true)});
+window.addEventListener("hashchange",()=>{const i=fromHash();if(i>=0&&i!==oi){openOp(i,true);drawer(false)}});
 $("stat").textContent=DATA.length+"개 오프닝 · "+DATA.reduce((a,o)=>a+o.lines.length,0)+"개 라인 · "+DATA.reduce((a,o)=>a+o.lines.filter(l=>l.kind==="b").length,0)+"개 함정·실수";
 function applySet(){document.documentElement.setAttribute("data-board",SET.theme);
   [["s-theme","theme"],["s-eng","eng"],["s-speed","speed"]].forEach(([id,k])=>document.querySelectorAll("#"+id+" button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v)===String(SET[k]))));
