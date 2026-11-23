@@ -108,6 +108,14 @@ input[type=checkbox]{width:18px;height:18px}
 .cmprow .val{font-family:var(--font-mono);font-size:12px;text-align:right}
 .pvgo{margin-top:8px}
 #dkinds{margin-right:6px}
+/* 분기 연습·실수 응징 시작 화면 */
+.scope{display:flex;flex-direction:column;gap:6px;margin:12px 0 4px}
+.scope .sh,.sideset .sh{font-size:12.5px;color:var(--muted)}
+.scope button{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;text-align:left;padding:9px 12px;min-height:42px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;font-size:14px;line-height:1.35;cursor:pointer;word-break:keep-all}
+.scope button small{color:var(--muted);font-size:12.5px;white-space:nowrap}
+.scope button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);font-weight:500;box-shadow:inset 3px 0 0 var(--accent)}
+.scope button:disabled{opacity:.45;cursor:default}
+.sideset{display:flex;align-items:center;gap:10px;margin:12px 0 2px}
 .m.alt{background:var(--accent-soft);color:var(--accent)}
 #f-lvl{font-size:13px;padding:4px 6px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text)}
 .diff{margin-top:10px;border-top:1px dashed var(--line);padding-top:8px;font-size:13.5px}
@@ -423,7 +431,7 @@ footer{font-size:12px;color:var(--muted);padding:0 32px 24px;max-width:120ch}
       <h2>처음이라면 이렇게 써 보세요</h2>
       <ol>
         <li><b>수순 보기</b>로 오프닝의 흐름과 수마다의 이유를 읽어요. 빨간 칩은 "이렇게 두면 안 되는 수"예요.</li>
-        <li><b>따라 두기 연습</b>으로 라인을 직접 두어 봐요. 틀리면 왜 안 되는지 알려줘요. 익숙해지면 <b>분기 연습</b>(상대가 여러 갈래로 응수)과 <b>실수 응징</b>(상대의 흔한 실수 벌하기)도 해 보세요.</li>
+        <li><b>따라 두기 연습</b>으로 라인을 직접 두어 봐요. 틀리면 왜 안 되는지 알려줘요. 익숙해지면 <b>분기 연습</b>(상대가 여러 갈래로 응수)과 <b>실수 응징</b>(상대의 흔한 실수 벌하기)도 해 보세요. 시작 전에 계열을 골라 범위를 좁힐 수 있어요.</li>
         <li><b>자유 실험</b>에서는 아무 수나 둬 볼 수 있어요. "다른 선택" 칩으로 자료에 없는 수의 평가를 보고, <b>엔진과 두기</b>로 그 위치부터 끝까지 둬 볼 수도 있어요.</li>
         <li>익숙해지면 <b>내 레퍼토리</b>에서 백 1개, 흑 2개를 골라 매일 몇 분씩 훈련해요. 잊을 때쯤 다시 물어봐요.</li>
       </ol>
@@ -498,6 +506,7 @@ footer{font-size:12px;color:var(--muted);padding:0 32px 24px;max-width:120ch}
             <button data-k="punish" aria-pressed="false" title="상대의 흔한 실수를 응징하는 문제">실수 응징</button>
           </div>
           <button class="btn" id="d-restart">처음부터 <kbd>R</kbd></button>
+          <button class="btn hide" id="d-scope" title="연습 범위(계열)와 연습할 쪽을 다시 골라요">범위 바꾸기</button>
           <button class="btn" id="d-hint">힌트 <kbd>H</kbd></button>
           <button class="btn" id="d-show">정답 <kbd>A</kbd></button>
           <button class="btn" id="d-color">색 바꾸기</button>
@@ -541,7 +550,7 @@ footer{font-size:12px;color:var(--muted);padding:0 32px 24px;max-width:120ch}
     </section>
   </main>
 </div>
-<footer>조작: 기물을 끌어서 놓거나, 클릭한 뒤 갈 칸을 클릭. 단축키: 보기 ← → Space Home End F · 연습 H(힌트) A(정답) R(다시) N(실수 응징: 다음 문제) · 자유 ←(무르기) E(엔진 추천) · S(즐겨찾기). 마지막으로 보던 라인과 모드는 다음에 열 때 이어서 보여드려요. 모든 수순은 체스 규칙 엔진으로 합법성을 검증했어요. 연습·자유 실험의 실시간 평가는 브라우저에서 수마다 0.6~2.5초(설정의 분석 시간) 도는 <span id="engname">엔진 준비 중</span> 분석이라 갬빗처럼 장기 보상이 있는 수를 실제보다 나쁘게 볼 수 있어요. 수순 보기의 평가는 미리 계산한 Stockfish 19 결과예요(깊이 17, 자료 판정과 어긋난 곳은 깊이 24로 재확인). 자료에 있는 수는 자료 평가를 먼저 참고하세요. 학습 기록은 이 브라우저에만 저장돼요. 기물 그림: Colin M.L. Burnett (CC BY-SA 3.0). 엔진: Stockfish (GPL). 엔진 파일은 처음 한 번만 받고 이후엔 브라우저 캐시를 써요.</footer>
+<footer>조작: 기물을 끌어서 놓거나, 클릭한 뒤 갈 칸을 클릭. 단축키: 보기 ← → Space Home End F · 연습 H(힌트) A(정답) R(다시) N(실수 응징: 다음 문제) Enter(분기 연습·실수 응징 시작) · 자유 ←(무르기) E(엔진 추천) · S(즐겨찾기). 마지막으로 보던 라인과 모드는 다음에 열 때 이어서 보여드려요. 모든 수순은 체스 규칙 엔진으로 합법성을 검증했어요. 연습·자유 실험의 실시간 평가는 브라우저에서 수마다 0.6~2.5초(설정의 분석 시간) 도는 <span id="engname">엔진 준비 중</span> 분석이라 갬빗처럼 장기 보상이 있는 수를 실제보다 나쁘게 볼 수 있어요. 수순 보기의 평가는 미리 계산한 Stockfish 19 결과예요(깊이 17, 자료 판정과 어긋난 곳은 깊이 24로 재확인). 자료에 있는 수는 자료 평가를 먼저 참고하세요. 학습 기록은 이 브라우저에만 저장돼요. 기물 그림: Colin M.L. Burnett (CC BY-SA 3.0). 엔진: Stockfish (GPL). 엔진 파일은 처음 한 번만 받고 이후엔 브라우저 캐시를 써요.</footer>
 <div class="upd" id="upd" role="status" aria-live="polite" hidden><span>새 버전이 준비됐어요<small>학습 기록은 그대로예요</small></span><button class="btn pri" id="upd-go">지금 적용</button><button class="btn" id="upd-later">나중에</button></div>
 <script src="chess.js"></script>
 <script src="data.js"></script>
@@ -857,10 +866,10 @@ function engineInto(res,fenBefore,uci,setCls,noArrow){if(!res||!$("engline"))ret
   if(setCls)$("now").className="now "+cls}
 
 /* ───── 따라 두기 연습 ───── */
-function startDrill(color){Engine.cancel();const kind=SET.dkind||"line";
+function startDrill(color,again){Engine.cancel();const kind=SET.dkind||"line";setupUI(false,kind);
   document.querySelectorAll("#dkinds button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===kind));
   $("d-color").classList.toggle("hide",kind==="punish");$("d-restart").innerHTML=(kind==="punish"?"새 문제 세트":kind==="tree"?"다른 갈래로 다시":"처음부터")+" <kbd>R</kbd>";
-  if(kind==="tree")return startTree(color);if(kind==="punish")return startPunish();
+  if(kind==="tree"||kind==="punish"){if(!again)return showSetup(kind,color);return kind==="tree"?startTree(color):startPunish()}
   const Ln=L();const last=Ln.steps.length-1;
   let c=color;if(!c){if(Ln.kind==="b")c=(last%2===0)?"w":"b";else c=DATA[oi].side==="흑"?"b":"w"}
   drill={color:c,ply:0,first:{},waiting:false,finished:false,wrong:false,hint:0};
@@ -935,27 +944,34 @@ function finishDrill(){if(drill.finished)return;drill.finished=true;const n=Obje
 function hint(){if(drill&&drill.wrong&&!drill.finished)retry();if(!drill||drill.finished||drill.waiting||game.turn()!==drill.color)return;if(drill.kind){extHint();return}const s=L().steps[drill.ply];drill.first[drill.ply]=false;drill.hint++;
   if(drill.hint===1){hintSq=[s.u.slice(0,2)];arrowsX=[]}else{hintSq=[];arrowsX=[{from:s.u.slice(0,2),to:s.u.slice(2,4),c:CSS("--arrow-hint")}]}
   redrawPlay();drillMoves()}
-$("d-restart").onclick=()=>startDrill(drill.color);
+$("d-restart").onclick=()=>startDrill(drill.color,true);
+$("d-scope").onclick=()=>showSetup(SET.dkind,drill&&drill.kind==="tree"?drill.color:undefined);
 document.querySelectorAll("#dkinds button").forEach(b=>b.onclick=()=>{SET.dkind=b.dataset.k;saveSet();startDrill()});
-$("d-color").onclick=()=>startDrill(drill.color==="w"?"b":"w");
+$("d-color").onclick=()=>startDrill(drill.color==="w"?"b":"w",true);
 $("f-vs").onclick=()=>{if(vs){stopVs();return}startVs()};$("f-lvl").onchange=e=>{if(vs)vs.lvl=+e.target.value;SET.vslvl=+e.target.value;saveSet()};
 $("d-hint").onclick=hint;
 $("d-show").onclick=()=>{if(!drill||drill.finished||drill.waiting||game.turn()!==drill.color)return;showAnswer()};
 
 
 /* ───── 분기 연습 · 실수 응징 ───── */
-function commonPre(o){const ls=o.lines;const out=[];for(let i=0;;i++){const u=ls[0].steps[i]&&ls[0].steps[i].u;if(!u||ls.some(l=>!l.steps[i]||l.steps[i].u!==u))return out;out.push(u)}}
-function bookAt(fen){const k=IDX[posKey(fen)]||{};return Object.entries(k).filter(([u,v])=>!v.m&&!v.a&&v.r&&v.r.some(r=>r[0]===oi))}
-function refKinds(v){return v.r.filter(r=>r[0]===oi).map(r=>DATA[oi].lines[r[1]].kind)}
-function lineOf(v){const r=v.r.find(r=>r[0]===oi);return r?DATA[oi].lines[r[1]].name:""}
+/* 범위(계열): 분기 연습·실수 응징을 오프닝 전체나 한 계열로 좁힌다. 오프닝마다 마지막으로 고른 계열을 기억한다 */
+function scopeGroups(o){return(o.grp||[]).filter(g=>g.label)}
+function scopeLab(o){const l=(SET.scopes||{})[o.id]||"";return scopeGroups(o).some(g=>g.label===l)?l:""}
+function scopeSet(o,lab){const g=lab&&scopeGroups(o).find(g=>g.label===lab);return g?new Set(g.lines):null}
+function scopeLines(o,sc){return sc?o.lines.filter((l,j)=>sc.has(j)):o.lines}
+function inSc(r){return r[0]===oi&&!(drill&&drill.sc&&!drill.sc.has(r[1]))}
+function commonPre(o,ls){ls=ls||o.lines;const out=[];for(let i=0;;i++){const u=ls[0].steps[i]&&ls[0].steps[i].u;if(!u||ls.some(l=>!l.steps[i]||l.steps[i].u!==u))return out;out.push(u)}}
+function bookAt(fen){const k=IDX[posKey(fen)]||{};return Object.entries(k).filter(([u,v])=>!v.m&&!v.a&&v.r&&v.r.some(inSc))}
+function refKinds(v){return v.r.filter(inSc).map(r=>DATA[oi].lines[r[1]].kind)}
+function lineOf(v){const r=v.r.find(inSc)||v.r.find(r=>r[0]===oi);return r?DATA[oi].lines[r[1]].name:""}
 function mvU(m){return m.from+m.to+(m.promotion||"")}
 function playU(u){const m=game.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||"q"});if(m){lastMv=[m.from,m.to];anim=lastMv.slice()}return m}
-function startTree(color){const o=DATA[oi];const c=color||(o.side==="흑"?"b":"w");
-  drill={kind:"tree",color:c,ok:0,n:0,waiting:false,finished:false,wrong:false,hint:0,marks:[]};
+function startTree(color){const o=DATA[oi];const c=color||(o.side==="흑"?"b":"w");const lab=scopeLab(o),sc=scopeSet(o,lab);setupUI(false,"tree");
+  drill={kind:"tree",color:c,ok:0,n:0,waiting:false,finished:false,wrong:false,hint:0,marks:[],sc,lab};
   $("d-color").textContent=(c==="w"?"흑":"백")+" 쪽으로 연습";
   game=new Chess();lastMv=[];sel=null;targets=[];arrowsX=[];hintSq=[];flipped=c==="b";
-  const pre=SET.skip?commonPre(o):[];pre.forEach(playU);anim=null;drill.pre=pre.length;
-  setNow("","분기 연습 · "+(c==="w"?"백":"흑"),"<p>상대가 갈림길마다 이 오프닝 자료의 여러 응수 중 하나를 골라 둬요. 어떤 갈래가 나와도 맞게 대응해 보세요. 함정 라인이 나오면 응징하는 수까지 이어져요.</p>"+(pre.length?'<p class="empty">모든 라인에 공통인 앞 수순 '+pre.length+"수는 자동으로 두었어요.</p>":""));
+  const pre=SET.skip?commonPre(o,scopeLines(o,sc)):[];pre.forEach(playU);anim=null;drill.pre=pre.length;
+  setNow("","분기 연습 · "+(c==="w"?"백":"흑"),(lab?'<p class="empty">범위: '+esc(lab)+" ("+sc.size+"라인)</p>":"")+"<p>상대가 갈림길마다 "+(lab?"이 계열":"이 오프닝")+" 자료의 여러 응수 중 하나를 골라 둬요. 어떤 갈래가 나와도 맞게 대응해 보세요. 함정 라인이 나오면 응징하는 수까지 이어져요.</p>"+(pre.length?'<p class="empty">모든 라인에 공통인 앞 수순 '+pre.length+"수는 자동으로 두었어요.</p>":""));
   extMoves();redrawPlay();setTimeout(treeStep,350)}
 function treeExp(){return bookAt(game.fen()).filter(([u,v])=>v.t!=="b")}
 function treeStep(){if(!drill||drill.kind!=="tree"||mode!=="drill"||drill.finished)return;
@@ -986,15 +1002,39 @@ function finishTree(){if(drill.finished)return;drill.finished=true;extMoves();co
   const box=$("now");box.className="now "+(r===1?"g":"w");
   box.insertAdjacentHTML("beforeend",'<p><span class="verdict '+(r===1?"g":"w")+'">갈래 끝</span> 첫 시도 정답 '+drill.ok+" / "+drill.n+(nm?" · 도착한 라인: <b>"+esc(nm)+"</b>":"")+'</p><div class="acts"><button class="btn pri" id="a-again">다른 갈래로 다시 <kbd>R</kbd></button></div>');
   $("a-again").onclick=()=>startTree(drill.color)}
+/* 시작 화면: 범위(계열)와 연습할 쪽을 고른 뒤 시작한다 */
+function setupUI(on,kind){["d-restart","d-hint","d-show"].forEach(id=>$(id).classList.toggle("hide",on));
+  $("d-scope").classList.toggle("hide",on||kind==="line");$("d-color").classList.toggle("hide",on||kind==="punish")}
+function showSetup(kind,color){Engine.cancel();const o=DATA[oi];
+  const c=color||(drill&&(drill.kind===kind||drill.sub===kind)&&kind==="tree"&&drill.color)||(o.side==="흑"?"b":"w");
+  drill={kind:"setup",sub:kind,color:c,waiting:true,finished:true,wrong:false,hint:0,ok:0,n:0,marks:[],pre:0};renderSetup()}
+function renderSetup(){const o=DATA[oi],kind=drill.sub,tree=kind==="tree",lab=scopeLab(o),sc=scopeSet(o,lab),gs=scopeGroups(o);setupUI(true,kind);
+  game=new Chess();lastMv=[];sel=null;targets=[];arrowsX=[];hintSq=[];
+  const pre=SET.skip?commonPre(o,scopeLines(o,sc)):[];pre.forEach(playU);anim=null;lastMv=[];drill.pre=pre.length;flipped=tree?drill.color==="b":o.side==="흑";
+  const cnt=g=>tree?(g?g.lines.length:o.lines.length):punishList(g?new Set(g.lines):null,true).length;
+  const row=(l,g)=>{const n=cnt(g);return'<button data-sc="'+esc(l)+'" aria-pressed="'+(l===lab)+'"'+(n||!l?"":" disabled")+"><span>"+(l?esc(l):"전체")+"</span><small>"+(tree?n+"라인":n?"문제 "+n+"개":"문제 없음")+"</small></button>"};
+  const total=cnt(null);
+  setNow("",(tree?"분기 연습":"실수 응징")+" · 시작 설정",
+    "<p>"+(tree?"상대가 갈림길마다 고른 범위 라인의 여러 응수 중 하나를 골라 둬요. 범위와 연습할 쪽을 고른 뒤 시작하세요.":"상대가 흔한 실수를 하면 응징하는 수를 찾는 문제예요. 범위를 고른 뒤 시작하세요. 한 세트는 최대 10문제예요.")+"</p>"
+    +(gs.length?'<div class="scope" role="group" aria-label="연습 범위"><span class="sh">범위</span>'+row("",null)+gs.map(g=>row(g.label,g)).join("")+"</div>":"")
+    +(tree?'<div class="sideset"><span class="sh">연습할 쪽</span><div class="seg small" role="group" aria-label="연습할 쪽"><button data-side="w" aria-pressed="'+(drill.color==="w")+'">백</button><button data-side="b" aria-pressed="'+(drill.color==="b")+'">흑</button></div></div>':"")
+    +(pre.length?'<p class="empty">이 범위의 공통 앞 수순 '+pre.length+"수는 자동으로 둬요.</p>":"")
+    +'<div class="acts"><button class="btn pri" id="a-start"'+(total||tree||lab?"":" disabled")+'>시작 <kbd>Enter</kbd></button></div>');
+  const now=$("now");
+  now.querySelectorAll("[data-sc]").forEach(b=>b.onclick=()=>{SET.scopes=SET.scopes||{};SET.scopes[o.id]=b.dataset.sc;saveSet();renderSetup()});
+  now.querySelectorAll("[data-side]").forEach(b=>b.onclick=()=>{drill.color=b.dataset.side;renderSetup()});
+  $("a-start").onclick=()=>{if(drill.kind!=="setup")return;tree?startTree(drill.color):startPunish()};
+  redrawPlay();extMoves()}
 /* 실수 응징 */
-function punishList(){const o=DATA[oi],seen=new Set(),out=[];
-  o.lines.forEach(l=>{let prev=START_FEN;l.steps.forEach((s,i)=>{const k=posKey(prev);
+function punishList(sc,all){const o=DATA[oi],seen=new Set(),out=[];
+  o.lines.forEach((l,j)=>{if(sc&&!sc.has(j))return;let prev=START_FEN;l.steps.forEach((s,i)=>{const k=posKey(prev);
     Object.entries(IDX[k]||{}).forEach(([u,v])=>{if(v.m&&v.pv&&!seen.has(k+u)){const sl=sanList(v.pv);if(sl.length>1){seen.add(k+u);out.push({fen:prev,u,n:v.n,pv:v.pv,sol:sl[1],x:v.x})}}});
     if(s.t==="b"&&l.kind==="b"&&i+1<l.steps.length&&!seen.has(k+s.u)){seen.add(k+s.u);const nx=l.steps[i+1];out.push({fen:prev,u:s.u,n:s.n,solU:nx.u,soln:nx.n,line:l.name})}
     prev=s.F})});
+  if(all)return out;
   for(let i=out.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[out[i],out[j]]=[out[j],out[i]]}return out.slice(0,10)}
-function startPunish(){const list=punishList();drill={kind:"punish",list,i:-1,ok:0,n:0,waiting:false,finished:false,wrong:false,hint:0,color:"w"};
-  if(!list.length){setNow("","실수 응징","<p>이 오프닝에는 아직 응징 문제가 없어요.</p>");game=new Chess();redrawPlay();extMoves();return}
+function startPunish(){const o=DATA[oi],lab=scopeLab(o),sc=scopeSet(o,lab);setupUI(false,"punish");const list=punishList(sc);drill={kind:"punish",list,i:-1,ok:0,n:0,waiting:false,finished:false,wrong:false,hint:0,color:"w",sc,lab};
+  if(!list.length){setNow("","실수 응징","<p>"+(lab?"이 계열에는":"이 오프닝에는")+" 아직 응징 문제가 없어요.</p>");game=new Chess();redrawPlay();extMoves();return}
   nextPuzzle()}
 function nextPuzzle(){Engine.cancel();drill.i++;drill.wrong=false;drill.hint=0;drill.tried=false;hintSq=[];arrowsX=[];
   if(drill.i>=drill.list.length){finishPunish();return}drill.n++;
@@ -1019,6 +1059,7 @@ function punishJudge(fenBefore,uci,mv){const p=drill.list[drill.i];const first=!
 function finishPunish(){drill.finished=true;extMoves();const r=drill.n?drill.ok/drill.n:1;
   setNow(r===1?"g":"w","실수 응징 끝",'<p>첫 시도 정답 '+drill.ok+" / "+drill.n+'</p><div class="acts"><button class="btn pri" id="a-again">새 문제 세트 <kbd>R</kbd></button></div>');$("a-again").onclick=startPunish}
 function extMoves(){if(!drill||!game)return;let h="";
+  if(drill.kind==="setup"){game.history().forEach((san,i)=>{if(i%2===0)h+='<span class="no">'+(i/2+1)+".</span>";h+='<span class="m pre">'+esc(san)+"</span>"});$("moves").innerHTML=h||'<span class="empty">시작 위치부터 둬요</span>';$("d-cnt").textContent="";return}
   if(drill.kind==="punish"){const p=drill.list[drill.i];h='<span class="m">문제 '+Math.min(drill.i+1,drill.list.length)+" / "+drill.list.length+"</span>"+(p&&p.line?'<span class="m pre">'+esc(p.line)+"</span>":"");$("d-cnt").textContent="정답 "+drill.ok+" / "+drill.n;$("moves").innerHTML=h;return}
   const hist=game.history();let n=1,w=true;let mi=0;
   hist.forEach((san,i)=>{if(w||i===0)h+='<span class="no">'+n+(w?".":"...")+"</span>";let cls="m";if(i<drill.pre)cls+=" pre";else{const mk=drill.marks[mi++];cls+=mk==="ok"?" ok":mk==="miss"?" miss":mk==="alt"?" ok alt":" pre"}
@@ -1240,7 +1281,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"){const op=document.q
 document.addEventListener("keydown",e=>{if(e.target.tagName==="INPUT"||e.target.tagName==="SELECT"||e.target.tagName==="TEXTAREA"||$("main").classList.contains("dictmode")||$("main").classList.contains("repmode")||e.metaKey||e.ctrlKey||e.altKey)return;const k=e.key;
   if(k==="s"||k==="S"){$("star").click();return}
   if(mode==="view"){if(k==="ArrowRight"||k===" "){go(st+1);e.preventDefault()}else if(k==="ArrowLeft"){go(st-1);e.preventDefault()}else if(k==="Home")go(0);else if(k==="End")go(1e9);else if(k==="f"||k==="F")$("flip").click()}
-  else if(mode==="drill"){if((k==="n"||k==="N")&&drill&&drill.kind==="punish"&&$("a-np"))nextPuzzle();else if(k==="h"||k==="H")hint();else if(k==="a"||k==="A")$("d-show").click();else if(k==="r"||k==="R"){if(drill.wrong)retry();else startDrill(drill.color)}}
+  else if(mode==="drill"){if((k==="n"||k==="N")&&drill&&drill.kind==="punish"&&$("a-np"))nextPuzzle();else if(k==="h"||k==="H")hint();else if(k==="a"||k==="A")$("d-show").click();else if(k==="r"||k==="R"){if(drill.wrong)retry();else startDrill(drill.color,true)}else if(k==="Enter"&&drill&&drill.kind==="setup"&&!/^(BUTTON|A|INPUT|SELECT|TEXTAREA)$/.test((document.activeElement||{}).tagName||"")&&$("a-start"))$("a-start").click()}
   else if(mode==="free"){if(k==="ArrowLeft"||k==="Backspace"){undo();e.preventDefault()}else if(k==="e"||k==="E")engineBest()}
   else if(mode==="train"){if(k==="h"||k==="H")$("t-hint").click();else if(k==="a"||k==="A")$("t-show").click();else if(k==="n"||k==="N")$("t-next").click()}});
 /* alt.js(다른 선택·엔진 이어지는 수)가 늦게 도착하면 지금 화면의 후보 수를 다시 그린다 */
