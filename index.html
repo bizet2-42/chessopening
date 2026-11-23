@@ -113,6 +113,7 @@ input[type=checkbox]{width:18px;height:18px}
 .scope .sh,.sideset .sh{font-size:12.5px;color:var(--muted)}
 .scope button{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;text-align:left;padding:9px 12px;min-height:42px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;font-size:14px;line-height:1.35;cursor:pointer;word-break:keep-all}
 .scope button small{color:var(--muted);font-size:12.5px;white-space:nowrap}
+.scope .gt .gm{font-size:14px} .scope button[aria-pressed="true"] .gt .gm{font-weight:700} .scope .gt .gm{font-weight:600}
 .scope button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);font-weight:500;box-shadow:inset 3px 0 0 var(--accent)}
 .scope button:disabled{opacity:.45;cursor:default}
 .sideset{display:flex;align-items:center;gap:10px;margin:12px 0 2px}
@@ -326,10 +327,22 @@ footer{font-size:12px;color:var(--muted);padding:0 32px 24px;max-width:120ch}
 .llg{flex:1;font-size:11.5px;color:var(--muted);display:flex;gap:4px;align-items:center;flex-wrap:wrap}
 .llist{overflow:auto;overscroll-behavior:contain;padding:2px 8px 12px}
 @media (min-width:1101px){.llist{columns:2;column-gap:20px}}
-.lgl{font-size:12px;color:var(--muted);font-family:var(--font-mono);padding:12px 8px 4px;display:flex;justify-content:space-between;gap:8px;break-after:avoid}
+/* 계열 카드: 계열마다 카드로 묶고 제목은 "맥락(작게) / 핵심(굵게)" 두 줄 */
+.lgrp{border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:2px 6px 6px;margin:4px 0 12px;break-inside:avoid;background:var(--surface);-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.lgrp.big{break-inside:auto}   /* 7줄 이상인 큰 카드는 두 단에 걸쳐 이어져 단 길이가 맞는다 */
+.lgrp .lrow{break-inside:avoid}
+.lgl{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;padding:10px 6px 8px;margin-bottom:4px;border-bottom:1px solid var(--line);color:var(--ink);break-after:avoid}
+.gt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.gt .ctx{font-size:11.5px;color:var(--muted);font-family:var(--font-mono);font-weight:400}
+.gt .gm{font-size:14.5px;font-weight:700;line-height:1.3;word-break:keep-all}
+.gt .san{font-family:var(--font-mono);color:var(--accent);font-weight:600}
+.lgl .cnt{font-size:11.5px;color:var(--muted);font-family:var(--font-mono);white-space:nowrap}
+.slot .lgrp>.lgl{position:sticky;top:0;z-index:2;background:var(--surface)}
+@media (max-width:1100px){.lgrp>.lgl{position:sticky;top:0;z-index:2;background:var(--surface)}}
 .lsl{font-size:11.5px;color:var(--muted);padding:6px 8px 0 22px;font-family:var(--font-mono);break-after:avoid}
 .lrow{display:flex;align-items:center;gap:6px;width:100%;border:0;background:none;font:inherit;font-size:13.5px;padding:7px 8px;border-radius:8px;text-align:left;color:var(--ink);break-inside:avoid;min-height:34px;cursor:pointer}
 .lrow.ind{padding-left:22px}
+.lgrp .lrow.ind{padding-left:18px} .lgrp .lsl{padding-left:18px}
 .lrow .nm{flex:1;min-width:0}
 .lrow:hover{background:var(--bg)}
 .lrow[aria-current="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
@@ -709,14 +722,19 @@ function lineClusters(o,idxs){let p=0;for(;;){const us=new Set();let end=false;f
     let lab=k==="_"?"":o.lines[g[0]].steps[p].l.replace(/[?!]+$/,"");const w=fw(o.lines[g[0]].name);
     if(g.length>1&&!/^\d/.test(w)&&g.every(i=>fw(o.lines[i].name)===w))lab+=" · "+w;out.push([lab,g])});
   return out}
+/* 계열 제목: "1...d5 뒤 흑의 대응 · 2...e6 퀸즈 갬빗 디클라인드" → 맥락(작게) + 핵심(굵게, 첫 수는 고정폭 강조) */
+function grpHead(lab,n,plain){let ctx="",main=lab;const i=lab.indexOf(" · "),j=lab.indexOf(" 뒤 ");
+  if(!plain){if(i>=0&&/(의 (대응|선택)|뒤)$/.test(lab.slice(0,i))){ctx=lab.slice(0,i);main=lab.slice(i+3)}else if(i<0&&j>=0){ctx=lab.slice(0,j+2);main=lab.slice(j+3)}}
+  const m=plain?null:main.match(/^(\d+\.(?:\.\.)?\S+)\s*(.*)$/);
+  return'<span class="gt">'+(ctx?'<small class="ctx">'+esc(ctx)+"</small>":"")+'<span class="gm">'+(m?'<b class="san">'+esc(m[1])+"</b>"+(m[2]?" "+esc(m[2]):""):esc(main))+"</span></span>"+(n!=null?'<span class="cnt">'+n+"개</span>":"")}
 function lineList(){const o=DATA[oi];let h="";
-  grps(o).forEach(g=>{if(g.label)h+='<div class="lgl"><span>'+esc(g.label)+"</span><span>"+g.lines.length+"개</span></div>";
+  grps(o).forEach(g=>{if(g.label)h+='<div class="lgrp'+(g.lines.length>=7?" big":"")+'"><div class="lgl">'+grpHead(g.label,g.lines.length)+"</div>";
     const pos=new Map(g.lines.map((v,n)=>[v,n]));let cl=g.lines.length>=7?lineClusters(o,g.lines.slice()):[["",g.lines.slice()]];
     if(cl.length<2)cl=[["",g.lines.slice()]];
     cl.sort((a,b)=>Math.min(...a[1].map(i=>pos.get(i)))-Math.min(...b[1].map(i=>pos.get(i))));
     cl.forEach(([lab,idxs])=>{if(cl.length>1)h+='<div class="lsl">'+esc(lab||"기본")+"</div>";
       idxs.sort((a,b)=>pos.get(a)-pos.get(b)).forEach(i=>{const l=o.lines[i],kk=key(o,i),s=stats[kk],e=endE(l);
-        h+='<button class="lrow'+(cl.length>1?" ind":"")+'" data-i="'+i+'" aria-current="'+(i===li)+'" title="'+KIND[l.kind]+' · 라인 끝 평가(백 기준) '+evTxt(e)+'"><i class="k '+l.kind+'"></i>'+(stars[kk]?'<span class="st">★</span>':"")+'<span class="nm">'+esc(l.name)+'</span>'+(s&&s.due<=Date.now()?'<i class="due" title="복습할 때가 됐어요"></i>':"")+'<span class="ev '+evCls(e)+'">'+evTxt(e)+"</span>"+(done[kk]?'<span class="done">✓</span>':s?'<span class="pct">'+Math.round(s.last*100)+"%</span>":"")+"</button>"})})});
+        h+='<button class="lrow'+(cl.length>1?" ind":"")+'" data-i="'+i+'" aria-current="'+(i===li)+'" title="'+KIND[l.kind]+' · 라인 끝 평가(백 기준) '+evTxt(e)+'"><i class="k '+l.kind+'"></i>'+(stars[kk]?'<span class="st">★</span>':"")+'<span class="nm">'+esc(l.name)+'</span>'+(s&&s.due<=Date.now()?'<i class="due" title="복습할 때가 됐어요"></i>':"")+'<span class="ev '+evCls(e)+'">'+evTxt(e)+"</span>"+(done[kk]?'<span class="done">✓</span>':s?'<span class="pct">'+Math.round(s.last*100)+"%</span>":"")+"</button>"})});if(g.label)h+="</div>"});
   $("llist").innerHTML=h;
   $("llist").querySelectorAll(".lrow").forEach(b=>b.onclick=()=>{const i=+b.dataset.i;closePick(false);if(i!==li)pushNav();openLine(i);$("board").scrollIntoView({block:"nearest"})})}
 function openPick(){lineList();$("lpop").hidden=false;$("lsel").setAttribute("aria-expanded","true");const c=$("llist").querySelector('[aria-current="true"]');if(c){c.scrollIntoView({block:"center"});c.focus({preventScroll:true})}}
@@ -1012,7 +1030,7 @@ function renderSetup(){const o=DATA[oi],kind=drill.sub,tree=kind==="tree",lab=sc
   game=new Chess();lastMv=[];sel=null;targets=[];arrowsX=[];hintSq=[];
   const pre=SET.skip?commonPre(o,scopeLines(o,sc)):[];pre.forEach(playU);anim=null;lastMv=[];drill.pre=pre.length;flipped=tree?drill.color==="b":o.side==="흑";
   const cnt=g=>tree?(g?g.lines.length:o.lines.length):punishList(g?new Set(g.lines):null,true).length;
-  const row=(l,g)=>{const n=cnt(g);return'<button data-sc="'+esc(l)+'" aria-pressed="'+(l===lab)+'"'+(n||!l?"":" disabled")+"><span>"+(l?esc(l):"전체")+"</span><small>"+(tree?n+"라인":n?"문제 "+n+"개":"문제 없음")+"</small></button>"};
+  const row=(l,g)=>{const n=cnt(g);return'<button data-sc="'+esc(l)+'" aria-pressed="'+(l===lab)+'"'+(n||!l?"":" disabled")+">"+(l?grpHead(l):'<span class="gt"><span class="gm">전체</span></span>')+"<small>"+(tree?n+"라인":n?"문제 "+n+"개":"문제 없음")+"</small></button>"};
   const total=cnt(null);
   setNow("",(tree?"분기 연습":"실수 응징")+" · 시작 설정",
     "<p>"+(tree?"상대가 갈림길마다 고른 범위 라인의 여러 응수 중 하나를 골라 둬요. 범위와 연습할 쪽을 고른 뒤 시작하세요.":"상대가 흔한 실수를 하면 응징하는 수를 찾는 문제예요. 범위를 고른 뒤 시작하세요. 한 세트는 최대 10문제예요.")+"</p>"
@@ -1168,8 +1186,8 @@ function repBadge(){const s=repSummary();const n=s.due+s.todayNew;$("openrep").t
 function openRep(){closeDict();$("main").classList.add("repmode");renderRep();window.scrollTo(0,0);drawer(false)}
 function closeRep(){$("main").classList.remove("repmode")}
 function pickRows(opts,sk){const cnt={};opts.forEach(o=>cnt[o.group]=(cnt[o.group]||0)+1);let h="",g=null;
-  opts.forEach(o=>{if(o.group!==g){g=o.group;h+='<div class="lgl"><span>'+esc(g)+"</span><span>"+cnt[g]+"개</span></div>"}
-    h+='<button class="lrow" data-addop="'+sk+"|"+o.id+'"><span class="nm">'+esc(o.name)+(o.en?"<small>"+esc(o.en)+"</small>":"")+'</span><span class="ev">'+o.lines.length+"라인</span></button>"});return h}
+  opts.forEach(o=>{if(o.group!==g){h+=(g!==null?"</div>":"")+'<div class="lgrp"><div class="lgl">'+grpHead(o.group,cnt[o.group],true)+"</div>";g=o.group}
+    h+='<button class="lrow" data-addop="'+sk+"|"+o.id+'"><span class="nm">'+esc(o.name)+(o.en?"<small>"+esc(o.en)+"</small>":"")+'</span><span class="ev">'+o.lines.length+"라인</span></button>"});return h+(g!==null?"</div>":"")}
 function openOpPick(sk){document.querySelectorAll("#slots .lpop:not([hidden])").forEach(p=>closeOpPick(p.id.slice(5),false));
   const p=$("opop-"+sk);if(!p)return;p.hidden=false;document.querySelector('#slots [data-pick="'+sk+'"]').setAttribute("aria-expanded","true");p.querySelector(".lbody").scrollIntoView({block:"nearest"});const f=p.querySelector(".lrow");if(f)f.focus({preventScroll:true})}
 function closeOpPick(sk,refocus){const p=$("opop-"+sk);if(!p||p.hidden)return;p.hidden=true;const b=document.querySelector('#slots [data-pick="'+sk+'"]');b.setAttribute("aria-expanded","false");if(refocus!==false)b.focus()}
