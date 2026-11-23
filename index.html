@@ -213,9 +213,15 @@ main #rep{display:none}
 main.repmode>*{display:none}
 main.repmode #rep{display:flex;flex-direction:column;gap:16px}
 .slots{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
-.slot{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.slot{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
 .slot h3{margin:0;font-size:15px}
-.slot select{height:36px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;font-size:14px;padding:0 8px;flex:1;min-width:0}
+.slot .lpop{left:0;right:auto;top:auto;width:max(100%,360px);max-width:calc(100vw - 24px)}
+.slot:last-child .lpop{left:auto;right:0}
+.slot .llist{columns:1}
+.addsel{flex:0 0 auto;width:100%}
+.addsel .nm{font-size:14.5px;font-weight:600}
+.addsel:disabled{opacity:.55;cursor:default;border-color:var(--line)}
+.lrow small{color:var(--muted);font-size:11.5px;margin-left:6px;font-weight:400}
 .repop{border-top:1px solid var(--line);padding-top:8px}
 .repop .t{display:flex;justify-content:space-between;align-items:center;font-weight:500;font-size:14px}
 .repop label{display:flex;gap:6px;font-size:13px;align-items:center;padding:2px 0}
@@ -338,6 +344,7 @@ footer{font-size:12px;color:var(--muted);padding:0 32px 24px;max-width:120ch}
   .optsd>summary{display:list-item;font-size:12.5px;color:var(--muted);cursor:pointer;padding:2px 0}
   .optsd .opts{margin-top:6px}
   .lpop{position:fixed;inset:0;z-index:70}
+  .slot .lpop,.slot:last-child .lpop{inset:0;width:auto;max-width:none}
   .lscrim{position:absolute;background:rgba(0,0,0,.35)}
   .lbody{position:absolute;left:0;right:0;bottom:0;max-height:80vh;max-height:80dvh;border:0;border-radius:16px 16px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.18)}
   .ltop b{flex:1}
@@ -1105,15 +1112,25 @@ function repSummary(){const cards=buildCards(),now=Date.now();const fresh=cards.
 function repBadge(){const s=repSummary();const n=s.due+s.todayNew;$("openrep").textContent="내 레퍼토리 훈련"+(s.total?(n?" ("+n+")":" ✓"):"")}
 function openRep(){closeDict();$("main").classList.add("repmode");renderRep();window.scrollTo(0,0);drawer(false)}
 function closeRep(){$("main").classList.remove("repmode")}
+function pickRows(opts,sk){const cnt={};opts.forEach(o=>cnt[o.group]=(cnt[o.group]||0)+1);let h="",g=null;
+  opts.forEach(o=>{if(o.group!==g){g=o.group;h+='<div class="lgl"><span>'+esc(g)+"</span><span>"+cnt[g]+"개</span></div>"}
+    h+='<button class="lrow" data-addop="'+sk+"|"+o.id+'"><span class="nm">'+esc(o.name)+(o.en?"<small>"+esc(o.en)+"</small>":"")+'</span><span class="ev">'+o.lines.length+"라인</span></button>"});return h}
+function openOpPick(sk){document.querySelectorAll("#slots .lpop:not([hidden])").forEach(p=>closeOpPick(p.id.slice(5),false));
+  const p=$("opop-"+sk);if(!p)return;p.hidden=false;document.querySelector('#slots [data-pick="'+sk+'"]').setAttribute("aria-expanded","true");p.querySelector(".lbody").scrollIntoView({block:"nearest"});const f=p.querySelector(".lrow");if(f)f.focus({preventScroll:true})}
+function closeOpPick(sk,refocus){const p=$("opop-"+sk);if(!p||p.hidden)return;p.hidden=true;const b=document.querySelector('#slots [data-pick="'+sk+'"]');b.setAttribute("aria-expanded","false");if(refocus!==false)b.focus()}
 function renderRep(){const s=repSummary();
   $("repstats").innerHTML="<div><b>"+s.total+"</b><span>전체 카드 (내 차례 위치)</span></div><div><b>"+s.due+"</b><span>오늘 복습할 카드</span></div><div><b>"+s.todayNew+"</b><span>오늘 새로 익힐 카드</span></div><div><b>"+s.learned+"</b><span>익힌 카드</span></div>";
   document.querySelectorAll("#s-newpd button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.v===SET.newpd));
   $("slots").innerHTML=SLOTS.map(([sk,title,f])=>{const mine=rep.ops[sk]||[];const opts=DATA.filter(f).filter(o=>!mine.includes(o.id));
-    return'<div class="slot"><h3>'+title+'</h3><div class="row"><select id="sel-'+sk+'" aria-label="'+title+' 고르기">'+opts.map(o=>'<option value="'+o.id+'">'+esc(o.name)+"</option>").join("")+'</select><button class="btn" data-add="'+sk+'">추가</button></div>'+
+    return'<div class="slot"><h3>'+title+'</h3><button class="lsel addsel" data-pick="'+sk+'" aria-haspopup="dialog" aria-expanded="false" aria-controls="opop-'+sk+'"'+(opts.length?"":" disabled")+'><span class="nm">'+(opts.length?"＋ 오프닝 추가":"추가할 오프닝이 더 없어요")+'</span>'+(opts.length?'<span class="lm">'+opts.length+'개 중에서 고르기 <b>목록 ▾</b></span>':"")+"</button>"+
+      (opts.length?'<div class="lpop" id="opop-'+sk+'" role="dialog" aria-label="'+title+' 고르기" hidden><div class="lscrim" data-close="'+sk+'"></div><div class="lbody"><div class="ltop"><b>'+title+'</b><span class="llg">누르면 바로 추가돼요</span><button class="btn" data-close="'+sk+'">닫기</button></div><div class="llist">'+pickRows(opts,sk)+"</div></div></div>":"")+
     (mine.length?mine.map(id=>{const o=DATA.find(x=>x.id===id);if(!o)return"";return'<div class="repop"><div class="t">'+esc(o.name)+'<button class="btn" style="height:28px;font-size:12px" data-del="'+sk+"|"+id+'">빼기</button></div>'+
       '<p class="empty" style="margin:4px 0;font-size:12px">기본으로는 상대 대응을 모두 포함하고, 내 수가 갈라지는 대안 라인과 내가 실수하는 함정 라인은 뺐어요. 체크로 바꿀 수 있어요.</p>'+
       o.lines.map((l,j)=>'<label><input type="checkbox" data-line="'+key(o,j)+'"'+(lineOn(o,j,sk==="w"?"w":"b")?" checked":"")+'><i class="k '+l.kind+'"></i>'+esc(l.name)+"</label>").join("")+"</div>"}).join(""):'<p class="empty" style="margin:0;font-size:13px">아직 고른 오프닝이 없어요.</p>')+"</div>"}).join("");
-  $("slots").querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>{const sk=b.dataset.add,v=$("sel-"+sk).value;rep.ops[sk]=rep.ops[sk]||[];if(v&&!rep.ops[sk].includes(v)){rep.ops[sk].push(v);saveRep();renderRep();repBadge()}});
+  $("slots").querySelectorAll("[data-pick]").forEach(b=>b.onclick=()=>{$("opop-"+b.dataset.pick).hidden?openOpPick(b.dataset.pick):closeOpPick(b.dataset.pick)});
+  $("slots").querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>closeOpPick(b.dataset.close,!b.classList.contains("lscrim")));
+  $("slots").querySelectorAll("[data-addop]").forEach(b=>b.onclick=()=>{const [sk,id]=b.dataset.addop.split("|");rep.ops[sk]=rep.ops[sk]||[];if(!rep.ops[sk].includes(id)){rep.ops[sk].push(id);saveRep();renderRep();repBadge()}
+    const nb=document.querySelector('#slots [data-pick="'+sk+'"]');if(nb)nb.focus({preventScroll:true})});
   $("slots").querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{const [sk,id]=b.dataset.del.split("|");rep.ops[sk]=rep.ops[sk].filter(x=>x!==id);saveRep();renderRep();repBadge()});
   $("slots").querySelectorAll("[data-line]").forEach(c=>c.onchange=()=>{rep.lines[c.dataset.line]=c.checked;saveRep();renderRep();repBadge()})}
 function startTrain(){const s=repSummary();if(!s.total){openRep();$("repstats").insertAdjacentHTML("afterend",'<p class="why" style="margin:0;color:var(--warn)">먼저 아래에서 오프닝을 하나 이상 추가하세요.</p>');return}
@@ -1204,7 +1221,7 @@ document.querySelectorAll("#modes button").forEach(b=>b.onclick=()=>setMode(b.da
 function setSize(px){document.documentElement.style.setProperty("--bw",px+"px");document.querySelectorAll("#sizes button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.s==px));put("chess-size",px)}
 document.querySelectorAll("#sizes button").forEach(b=>b.onclick=()=>setSize(+b.dataset.s));
 $("about").addEventListener("toggle",()=>put("chess-about",$("about").open));
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("lpop").hidden){closePick();return}if(!$("settings").classList.contains("hide")){toggleSet(false);$("setbtn").focus();return}if($("aside").classList.contains("open")){drawer(false);$("menu").focus();return}if(!$("intro").classList.contains("hide")){showIntro(false);put("chess-intro",true);return}}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){const op=document.querySelector("#slots .lpop:not([hidden])");if(op){closeOpPick(op.id.slice(5));return}if(!$("lpop").hidden){closePick();return}if(!$("settings").classList.contains("hide")){toggleSet(false);$("setbtn").focus();return}if($("aside").classList.contains("open")){drawer(false);$("menu").focus();return}if(!$("intro").classList.contains("hide")){showIntro(false);put("chess-intro",true);return}}});
 document.addEventListener("keydown",e=>{if(e.target.tagName==="INPUT"||e.target.tagName==="SELECT"||e.target.tagName==="TEXTAREA"||$("main").classList.contains("dictmode")||$("main").classList.contains("repmode")||e.metaKey||e.ctrlKey||e.altKey)return;const k=e.key;
   if(k==="s"||k==="S"){$("star").click();return}
   if(mode==="view"){if(k==="ArrowRight"||k===" "){go(st+1);e.preventDefault()}else if(k==="ArrowLeft"){go(st-1);e.preventDefault()}else if(k==="Home")go(0);else if(k==="End")go(1e9);else if(k==="f"||k==="F")$("flip").click()}
